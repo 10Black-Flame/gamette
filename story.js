@@ -1146,6 +1146,59 @@ function interactWithNPC(npc) {
         emotionModifier = ` ${emotion.icon} (${emotion.name})`;
     }
     
+    // Handle special interactions
+    if (npc.specialInteraction) {
+        const interaction = npc.specialInteraction;
+        
+        if (interaction.type === 'class_unlock') {
+            // Check requirements
+            const reqs = interaction.requirements;
+            let meetsRequirements = true;
+            if (reqs.level && gameState.player.level < reqs.level) meetsRequirements = false;
+            if (reqs.classType && gameState.player.classType !== reqs.classType) meetsRequirements = false;
+            
+            if (meetsRequirements) {
+                const accept = confirm(`${npc.name}${emotionModifier}: "${interaction.dialogue}"`);
+                if (accept) {
+                    // Unlock the class
+                    if (!gameState.player.unlockedClasses) gameState.player.unlockedClasses = {};
+                    gameState.player.unlockedClasses[interaction.classId] = true;
+                    
+                    // Give reward if specified
+                    if (interaction.reward) {
+                        gameState.player.addItem(interaction.reward, 1);
+                        addGameLog(`Received ${GAME_DATA.items[interaction.reward].name}!`, 'success');
+                    }
+                    
+                    addGameLog(`Unlocked hidden class: ${GAME_DATA.hiddenClasses[interaction.classId].name}!`, 'success');
+                    playSuccessSound();
+                    updateClassesScreen();
+                }
+            } else {
+                alert(`${npc.name}${emotionModifier}: "You are not yet ready for this path. Return when you have proven yourself."`);
+            }
+            return;
+        } else if (interaction.type === 'item_offer') {
+            // Check requirements
+            const reqs = interaction.requirements;
+            let meetsRequirements = true;
+            if (reqs.level && gameState.player.level < reqs.level) meetsRequirements = false;
+            
+            if (meetsRequirements) {
+                const accept = confirm(`${npc.name}${emotionModifier}: "${interaction.dialogue}"`);
+                if (accept) {
+                    gameState.player.addItem(interaction.itemId, 1);
+                    addGameLog(`Received ${GAME_DATA.items[interaction.itemId].name}!`, 'success');
+                    playSuccessSound();
+                    updateInventoryScreen();
+                }
+            } else {
+                alert(`${npc.name}${emotionModifier}: "You are not yet ready for this gift."`);
+            }
+            return;
+        }
+    }
+    
     if (npc.type === 'shopkeeper') {
         openShop(npc);
     } else if (npc.type === 'quest_giver') {
@@ -1653,7 +1706,8 @@ function saveGame() {
             gold: gameState.player.gold,
             inventory: gameState.player.inventory,
             currentLocation: gameState.player.currentLocation,
-            quests: gameState.player.quests
+            quests: gameState.player.quests,
+            unlockedClasses: gameState.player.unlockedClasses
         }
     };
 
@@ -1697,6 +1751,7 @@ function loadGame() {
         gameState.player.inventory = save.player.inventory;
         gameState.player.currentLocation = save.player.currentLocation;
         gameState.player.quests = save.player.quests;
+        gameState.player.unlockedClasses = save.player.unlockedClasses || {};
 
         gameState.gameStarted = true;
         showScreen('mainGame');
@@ -2529,24 +2584,26 @@ function updateClassesScreen() {
         }
     });
     
-    // Show unlocked hidden classes
-    Object.keys(gameState.player.unlockedClasses || {}).forEach(classId => {
-        if (gameState.player.unlockedClasses[classId]) {
-            const cls = GAME_DATA.hiddenClasses[classId];
-            const classCard = document.createElement('div');
-            classCard.className = 'class-card hidden-class-unlock';
-            classCard.innerHTML = `
-                <div class="class-name">⭐ ${cls.name} (Hidden)</div>
-                <div class="class-description">${cls.description}</div>
-                <div class="unlock-progress">${cls.specialAbility}</div>
-                <button class="btn" id="select-${classId}-btn" ${gameState.player.classType === classId ? 'disabled' : ''}>${gameState.player.classType === classId ? 'Current' : 'Select'}</button>
-            `;
-            availableClassesList.appendChild(classCard);
-            if (gameState.player.classType !== classId) {
-                document.getElementById(`select-${classId}-btn`).addEventListener('click', () => changeClass(classId));
+    // Show unlocked hidden classes only if they are unlocked
+    if (gameState.player.unlockedClasses) {
+        Object.keys(gameState.player.unlockedClasses).forEach(classId => {
+            if (gameState.player.unlockedClasses[classId] && GAME_DATA.hiddenClasses[classId]) {
+                const cls = GAME_DATA.hiddenClasses[classId];
+                const classCard = document.createElement('div');
+                classCard.className = 'class-card hidden-class-unlock';
+                classCard.innerHTML = `
+                    <div class="class-name">⭐ ${cls.name} (Hidden)</div>
+                    <div class="class-description">${cls.description}</div>
+                    <div class="unlock-progress">${cls.specialAbility}</div>
+                    <button class="btn" id="select-${classId}-btn" ${gameState.player.classType === classId ? 'disabled' : ''}>${gameState.player.classType === classId ? 'Current' : 'Select'}</button>
+                `;
+                availableClassesList.appendChild(classCard);
+                if (gameState.player.classType !== classId) {
+                    document.getElementById(`select-${classId}-btn`).addEventListener('click', () => changeClass(classId));
+                }
             }
-        }
-    });
+        });
+    }
 }
 
 function resetGame() {

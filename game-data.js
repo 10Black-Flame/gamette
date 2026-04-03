@@ -266,7 +266,14 @@ const GAME_DATA = {
             type: 'quest_giver',
             quest: 'defeat_shadow_lord',
             personality: 'wise',
-            intelligence: 'high'
+            intelligence: 'high',
+            specialInteraction: {
+                type: 'class_unlock',
+                classId: 'paladin',
+                requirements: { level: 10, classType: 'warrior' },
+                dialogue: 'Ah, a warrior with a pure heart! The path of the Paladin awaits you. Will you embrace the holy light?',
+                reward: 'paladin_oath'
+            }
         },
         // Additional Characters
         librarian: {
@@ -277,7 +284,14 @@ const GAME_DATA = {
             type: 'quest_giver',
             quest: 'find_ancient_tome',
             personality: 'scholarly',
-            intelligence: 'genius'
+            intelligence: 'genius',
+            specialInteraction: {
+                type: 'item_offer',
+                itemId: 'spell_book',
+                requirements: { level: 5 },
+                dialogue: 'I see you have a thirst for knowledge. This ancient spell book has been gathering dust. Would you like to take it?',
+                reward: 'spell_book'
+            }
         },
         merchant: {
             id: 'merchant',

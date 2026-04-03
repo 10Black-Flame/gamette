@@ -537,7 +537,9 @@ async function handleLogin() {
                 gameState.userId = data.userId;
                 gameState.username = data.username;
                 saveSessionState();
-                showScreen('characterCreation');
+                if (!promptLoadSavedGame()) {
+                    showScreen('characterCreation');
+                }
                 errorEl.classList.remove('show');
             } else {
                 showError(errorEl, data.error);
@@ -548,15 +550,38 @@ async function handleLogin() {
             gameState.username = username;
             gameState.userId = 'local_' + Date.now();
             saveSessionState();
-            showScreen('characterCreation');
+            if (!promptLoadSavedGame()) {
+                showScreen('characterCreation');
+            }
         }
     } else {
         // Local mode - just set username
         gameState.username = username;
         gameState.userId = 'local_' + Date.now();
         saveSessionState();
-        showScreen('characterCreation');
+        if (!promptLoadSavedGame()) {
+            showScreen('characterCreation');
+        }
     }
+}
+
+function promptLoadSavedGame() {
+    const savedData = localStorage.getItem('aetheria_save');
+    if (!savedData) return false;
+
+    try {
+        const save = JSON.parse(savedData);
+        if (save.player && save.player.name && save.username === gameState.username) {
+            const load = confirm(`Saved game found for ${save.player.name}. Load it now?`);
+            if (load) {
+                loadGame();
+                return true;
+            }
+        }
+    } catch (err) {
+        console.error('Unable to parse saved game data', err);
+    }
+    return false;
 }
 
 async function handleRegister() {
@@ -1201,8 +1226,9 @@ function interactWithNPC(npc) {
     
     if (npc.type === 'shopkeeper') {
         openShop(npc);
+        return;
     } else if (npc.type === 'quest_giver') {
-        giveQuest(npc.quest);
+        if (offerQuestToPlayer(npc)) return;
     }
     
     alert(`${npc.name}${emotionModifier}: "${dialogue}"`);
@@ -1256,21 +1282,115 @@ function pickUpItem(item) {
 }
 
 // ============ QUEST SYSTEM ============
-function giveQuest(questId) {
+function offerQuestToPlayer(npc) {
+    const questId = npc.quest;
     const quest = GAME_DATA.quests[questId];
-    if (quest && !gameState.player.quests[questId]) {
-        gameState.player.quests[questId] = { id: questId, completed: false };
-        addGameLog(`Quest: ${quest.title}`);
+    if (!quest) return;
+
+    const playerQuest = gameState.player.quests[questId];
+    if (!playerQuest) {
+        if (quest.type === 'system') {
+            gameState.player.quests[questId] = {
+                id: questId,
+                status: 'completed',
+                completed: true,
+                giver: npc.id || null
+            };
+            rewardQuest(questId);
+            addGameLog(`System quest completed: ${quest.title}`, 'success');
+            return true;
+        }
+
+        const accept = confirm(`${npc.name}: "${quest.description}"
+Do you accept the quest \"${quest.title}\"?`);
+        if (!accept) {
+            return true;
+        }
+
+        gameState.player.quests[questId] = {
+            id: questId,
+            status: 'accepted',
+            completed: false,
+            giver: npc.id || null
+        };
+        addGameLog(`Accepted quest: ${quest.title}`, 'success');
+        updateQuestsScreen();
+        return true;
+    }
+
+    if (playerQuest.status === 'accepted' && !playerQuest.completed) {
+        if (checkQuestCompletion(questId)) {
+            completeQuest(questId, npc.id);
+        } else {
+            alert(`${npc.name}: "You have not completed this task yet. Return when you are ready."`);
+        }
+        return true;
+    }
+
+    if (playerQuest.completed) {
+        alert(`${npc.name}: "Thank you again for your help."`);
+        return true;
+    }
+    return true;
+}
+
+function completeQuest(questId, returningNpcId) {
+    const quest = GAME_DATA.quests[questId];
+    const playerQuest = gameState.player.quests[questId];
+    if (!quest || !playerQuest || playerQuest.completed) return;
+
+    if (quest.type === 'system') {
+        rewardQuest(questId);
+        playerQuest.status = 'completed';
+        playerQuest.completed = true;
+        playerQuest.completedAt = Date.now();
+        addGameLog(`System quest complete: ${quest.title}`, 'success');
+        updateQuestsScreen();
+        return;
+    }
+
+    if (returningNpcId && playerQuest.giver && returningNpcId !== playerQuest.giver) {
+        alert('You must return to the quest giver to claim your reward.');
+        return;
+    }
+
+    playerQuest.status = 'completed';
+    playerQuest.completed = true;
+    playerQuest.completedAt = Date.now();
+    rewardQuest(questId);
+    addGameLog(`Quest Complete! ${quest.title} - +${quest.reward} gold`, 'success');
+    updateUI();
+    updateQuestsScreen();
+}
+
+function rewardQuest(questId) {
+    const quest = GAME_DATA.quests[questId];
+    if (!quest) return;
+    if (quest.reward) {
+        gameState.player.gold += quest.reward;
+    }
+    if (quest.rewardItem) {
+        gameState.player.addItem(quest.rewardItem, 1);
+        addGameLog(`Received item: ${GAME_DATA.items[quest.rewardItem].name}`, 'success');
     }
 }
 
-function completeQuest(questId) {
+function checkQuestCompletion(questId) {
+    if (!gameState.player.quests[questId]) return false;
     const quest = GAME_DATA.quests[questId];
-    if (quest && gameState.player.quests[questId]) {
-        gameState.player.quests[questId].completed = true;
-        gameState.player.gold += quest.reward;
-        addGameLog(`Quest Complete! +${quest.reward} gold`);
-        updateUI();
+    if (!quest) return false;
+
+    switch (questId) {
+        case 'defeat_shadow_lord':
+            return gameState.player.questProgress?.defeat_shadow_lord === true;
+        case 'find_ancient_tome':
+            return gameState.player.inventory.some(item => item.id === 'ancient_tome');
+        case 'deliver_message':
+            return gameState.player.currentLocation === 'forest';
+        case 'translate_ancient_text':
+            return gameState.player.questProgress?.translate_ancient_text === true;
+        default:
+            return false;
     }
 }
 
@@ -1278,13 +1398,21 @@ function updateQuestsScreen() {
     const questsList = document.getElementById('quests-list');
     questsList.innerHTML = '';
 
-    Object.values(GAME_DATA.quests).forEach(quest => {
-        const questStatus = gameState.player.quests[quest.id];
+    const activeQuests = Object.values(gameState.player.quests || {}).filter(q => q.status === 'accepted' || q.completed);
+    if (activeQuests.length === 0) {
+        questsList.innerHTML = '<p>No accepted quests yet. Talk to quest givers to accept new tasks.</p>';
+        return;
+    }
+
+    activeQuests.forEach(playerQuest => {
+        const quest = GAME_DATA.quests[playerQuest.id];
+        if (!quest) return;
         const questItem = document.createElement('div');
-        questItem.className = questStatus && questStatus.completed ? 'quest-item completed' : 'quest-item';
+        questItem.className = playerQuest.completed ? 'quest-item completed' : 'quest-item';
         questItem.innerHTML = `
-            <div class="quest-title">${quest.title} ${questStatus && questStatus.completed ? '✓' : ''}</div>
+            <div class="quest-title">${quest.title} ${playerQuest.completed ? '✓' : ''}</div>
             <div class="quest-description">${quest.description}</div>
+            <div class="quest-status">Status: ${playerQuest.completed ? 'Completed' : 'Accepted'}</div>
             <div class="quest-reward">Reward: ${quest.reward} gold</div>
         `;
         questsList.appendChild(questItem);
@@ -1311,8 +1439,9 @@ function updateCombatUI() {
     const player = gameState.player;
 
     // Update health bars
-    const playerHealthPercent = (player.hp / player.maxHP) * 100;
-    const enemyHealthPercent = (enemy.hp / enemy.hp) * 100;
+    const playerHealthPercent = Math.max(0, Math.min(100, (player.hp / player.maxHP) * 100));
+    const enemyMaxHP = GAME_DATA.enemies[enemy.id]?.hp || enemy.hp || 1;
+    const enemyHealthPercent = Math.max(0, Math.min(100, (enemy.hp / enemyMaxHP) * 100));
 
     document.getElementById('player-health-bar').style.width = playerHealthPercent + '%';
     document.getElementById('enemy-health-bar').style.width = enemyHealthPercent + '%';
@@ -1324,12 +1453,10 @@ function updateCombatUI() {
 function combatAttack() {
     playClickSound();
     const damage = Math.floor(gameState.player.attack + Math.random() * 5);
-    const actualDamage = gameState.player.currentEnemy.takeDamage ? gameState.player.currentEnemy.hp -= damage : (() => {
-        gameState.player.currentEnemy.hp -= damage;
-        return damage;
-    })();
+    gameState.player.currentEnemy.hp = Math.max(0, gameState.player.currentEnemy.hp - damage);
 
     addGameLog(`You attacked for ${damage} damage!`, 'player');
+    updateCombatUI();
 
     if (gameState.player.currentEnemy.hp <= 0) {
         endCombat(true);
@@ -1348,9 +1475,10 @@ function combatCastSpell() {
     gameState.player.mp -= 15;
     gameState.player.spellsCast++;
     const damage = Math.floor(gameState.player.attack * 1.5 + Math.random() * 10);
-    gameState.player.currentEnemy.hp -= damage;
+    gameState.player.currentEnemy.hp = Math.max(0, gameState.player.currentEnemy.hp - damage);
 
     addGameLog(`You cast a spell dealing ${damage} damage!`, 'player');
+    updateCombatUI();
 
     if (gameState.player.currentEnemy.hp <= 0) {
         endCombat(true);
@@ -1421,7 +1549,9 @@ function endCombat(victory) {
 
         // Check quest completion
         if (enemy.name === 'Shadow Lord') {
-            completeQuest('defeat_shadow_lord');
+            gameState.player.questProgress = gameState.player.questProgress || {};
+            gameState.player.questProgress.defeat_shadow_lord = true;
+            addGameLog('You have defeated the Shadow Lord. Return to Brother Isaiah to claim your reward.', 'success');
         }
     } else {
         addGameLog(`You were defeated...`, 'enemy');
@@ -1691,6 +1821,7 @@ function saveGame() {
         return;
     }
     const saveData = {
+        username: gameState.username,
         player: {
             name: gameState.player.name,
             classType: gameState.player.classType,

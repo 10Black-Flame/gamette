@@ -485,7 +485,7 @@ function simulateWorldTick() {
     
     // Advance time every few game loops
     worldTime.gameLoops++;
-    if (worldTime.gameLoops % 50 === 0) {
+    if (worldTime.gameLoops % 25 === 0) {
         worldTime.advance(1); // Advance 1 hour
         updateWorldDisplay();
         

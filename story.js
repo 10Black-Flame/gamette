@@ -2031,6 +2031,14 @@ function saveGame() {
     }
     const saveData = {
         username: gameState.username,
+        lastSaveTime: Date.now(),
+        worldTime: worldTime ? {
+            year: worldTime.year,
+            month: worldTime.month,
+            day: worldTime.day,
+            hour: worldTime.hour,
+            gameLoops: worldTime.gameLoops
+        } : null,
         player: {
             name: gameState.player.name,
             classType: gameState.player.classType,
@@ -2097,6 +2105,22 @@ function loadGame(savedData = null) {
     const save = savedData || getSavedGameForCurrentUser();
     if (!save) return;
     gameState.player = new Player(save.player.name, save.player.classType);
+
+    // Restore world time
+    if (save.worldTime) {
+        if (!worldTime) worldTime = new WorldTime();
+        worldTime.year = save.worldTime.year;
+        worldTime.month = save.worldTime.month;
+        worldTime.day = save.worldTime.day;
+        worldTime.hour = save.worldTime.hour;
+        worldTime.gameLoops = save.worldTime.gameLoops;
+        // Advance time based on real time elapsed
+        if (save.lastSaveTime) {
+            const elapsedMs = Date.now() - save.lastSaveTime;
+            const elapsedHours = Math.min(Math.floor(elapsedMs / 5000), 24); // Cap at 24 hours to prevent huge jumps
+            worldTime.advance(elapsedHours);
+        }
+    }
 
     // Restore player stats
     gameState.player.hp = save.player.hp;

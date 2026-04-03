@@ -1,0 +1,68 @@
+{
+  "name": "Mystic Dungeons Expansion",
+  "version": "1.0",
+  "description": "Adds new dungeon locations, powerful enemies, and rare loot",
+  "locations": {
+    "crystal_cave": {
+      "name": "Crystal Cave",
+      "description": "A cavern filled with glowing crystals that illuminate the walls with ethereal light. The crystals hum with magical energy.",
+      "items": ["crystal_shard", "magic_crystal"],
+      "npcs": [],
+      "enemies": ["crystal_golem", "mana_wraith"]
+    },
+    "dragon_lair": {
+      "name": "Ancient Dragon Lair",
+      "description": "The lair of an ancient dragon, filled with treasure and danger. Bones litter the floor and the air smells of sulfur.",
+      "items": ["dragon_scale", "dragon_egg"],
+      "npcs": [],
+      "enemies": ["young_dragon", "dragon_whelp"]
+    },
+    "underground_city": {
+      "name": "Underground City",
+      "description": "A vast subterranean city carved from living rock. Strange glowing fungi provide illumination.",
+      "items": ["glow_fungus", "ancient_relic"],
+      "npcs": ["dwarf_king", "deep_gnome"],
+      "enemies": ["stone_giant", "fungus_monster"]
+    }
+  },
+  "items": {
+    "crystal_shard": { "id": "crystal_shard", "name": "Crystal Shard", "type": "material", "gold": 75 },
+    "magic_crystal": { "id": "magic_crystal", "name": "Magic Crystal", "type": "material", "gold": 200 },
+    "dragon_scale": { "id": "dragon_scale", "name": "Dragon Scale", "type": "material", "gold": 500 },
+    "dragon_egg": { "id": "dragon_egg", "name": "Dragon Egg", "type": "quest_item", "gold": 1000 },
+    "glow_fungus": { "id": "glow_fungus", "name": "Glow Fungus", "type": "material", "gold": 30 },
+    "ancient_relic": { "id": "ancient_relic", "name": "Ancient Relic", "type": "quest_item", "gold": 300 },
+    "dragon_sword": { "id": "dragon_sword", "name": "Dragonbane Sword", "type": "weapon", "attack": 35, "gold": 1500 },
+    "crystal_armor": { "id": "crystal_armor", "name": "Crystal Armor", "type": "armor", "defense": 20, "gold": 1200 }
+  },
+  "enemies": {
+    "crystal_golem": { "name": "Crystal Golem", "hp": 120, "attack": 18, "defense": 12, "exp": 150, "gold": 80, "drops": ["crystal_shard", "magic_crystal"] },
+    "mana_wraith": { "name": "Mana Wraith", "hp": 60, "attack": 12, "defense": 8, "exp": 80, "gold": 40, "drops": ["magic_crystal"] },
+    "young_dragon": { "name": "Young Dragon", "hp": 200, "attack": 30, "defense": 18, "exp": 300, "gold": 200, "drops": ["dragon_scale"] },
+    "dragon_whelp": { "name": "Dragon Whelp", "hp": 80, "attack": 20, "defense": 10, "exp": 120, "gold": 100, "drops": ["dragon_scale"] },
+    "stone_giant": { "name": "Stone Giant", "hp": 180, "attack": 25, "defense": 20, "exp": 200, "gold": 120, "drops": ["ore", "gem"] },
+    "fungus_monster": { "name": "Fungus Monster", "hp": 90, "attack": 15, "defense": 6, "exp": 100, "gold": 60, "drops": ["glow_fungus", "herb"] }
+  },
+  "npcs": {
+    "dwarf_king": { "name": "King Stonebeard", "role": "ruler", "dialogue": "Welcome to my underground kingdom, surface dweller. What brings you to these depths?" },
+    "deep_gnome": { "name": "Tinker Gemspark", "role": "craftsman", "dialogue": "Ah, a visitor! Care to see my latest invention?" }
+  },
+  "quests": {
+    "slay_crystal_golem": {
+      "id": "slay_crystal_golem",
+      "title": "Crystal Guardian",
+      "description": "Defeat the Crystal Golem guarding the ancient crystal chamber.",
+      "reward": 300,
+      "required": false,
+      "startLocation": "crystal_cave"
+    },
+    "dragon_hunter": {
+      "id": "dragon_hunter",
+      "title": "Dragon Hunter",
+      "description": "Slay the young dragon terrorizing the mountain region.",
+      "reward": 800,
+      "required": false,
+      "startLocation": "dragon_lair"
+    }
+  }
+}

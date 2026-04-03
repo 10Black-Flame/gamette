@@ -566,20 +566,13 @@ async function handleLogin() {
 }
 
 function promptLoadSavedGame() {
-    const savedData = localStorage.getItem('aetheria_save');
-    if (!savedData) return false;
+    const save = getSavedGameForCurrentUser();
+    if (!save) return false;
 
-    try {
-        const save = JSON.parse(savedData);
-        if (save.player && save.player.name && save.username === gameState.username) {
-            const load = confirm(`Saved game found for ${save.player.name}. Load it now?`);
-            if (load) {
-                loadGame();
-                return true;
-            }
-        }
-    } catch (err) {
-        console.error('Unable to parse saved game data', err);
+    const load = confirm(`Saved game found for ${save.player.name}. Load it now?`);
+    if (load) {
+        loadGame(save);
+        return true;
     }
     return false;
 }
@@ -1148,7 +1141,12 @@ function createItemElement(item) {
         <div><strong>${item.name}</strong></div>
         <div>Value: ${item.gold} gold</div>
     `;
-    element.addEventListener('click', () => pickUpItem(item));
+    element.addEventListener('click', () => {
+        const confirmPickup = confirm(`Pick up ${item.name}?`);
+        if (confirmPickup) {
+            pickUpItem(item);
+        }
+    });
     return element;
 }
 
@@ -1276,7 +1274,10 @@ function buyItem(item) {
 function pickUpItem(item) {
     gameState.player.addItem(item.id);
     const location = GAME_DATA.locations[gameState.player.currentLocation];
-    location.items = location.items.filter(id => id !== item.id);
+    const itemIndex = location.items.indexOf(item.id);
+    if (itemIndex !== -1) {
+        location.items.splice(itemIndex, 1);
+    }
     addGameLog(`Picked up ${item.name}`);
     loadLocation(gameState.player.currentLocation);
 }
@@ -1398,25 +1399,54 @@ function updateQuestsScreen() {
     const questsList = document.getElementById('quests-list');
     questsList.innerHTML = '';
 
-    const activeQuests = Object.values(gameState.player.quests || {}).filter(q => q.status === 'accepted' || q.completed);
-    if (activeQuests.length === 0) {
-        questsList.innerHTML = '<p>No accepted quests yet. Talk to quest givers to accept new tasks.</p>';
-        return;
+    // Add explanatory text
+    const explanation = document.createElement('p');
+    explanation.textContent = 'Talk to the giver first, then return to them for the reward.';
+    explanation.style.fontSize = '0.9em';
+    explanation.style.color = '#888';
+    explanation.style.marginBottom = '10px';
+    questsList.appendChild(explanation);
+
+    const acceptedQuests = Object.values(gameState.player.quests || {}).filter(q => q.status === 'accepted');
+    const completedQuests = Object.values(gameState.player.quests || {}).filter(q => q.completed);
+
+    if (acceptedQuests.length === 0) {
+        questsList.innerHTML += '<p>No accepted quests yet. Talk to quest givers to accept new tasks.</p>';
+    } else {
+        questsList.innerHTML += '<h3>Accepted Quests</h3>';
+        acceptedQuests.forEach(playerQuest => {
+            const quest = GAME_DATA.quests[playerQuest.id];
+            if (!quest) return;
+            const questItem = document.createElement('div');
+            questItem.className = 'quest-item';
+            const systemIndicator = quest.type === 'system' ? ' (System Quest)' : '';
+            questItem.innerHTML = `
+                <div class="quest-title">${quest.title}${systemIndicator}</div>
+                <div class="quest-description">${quest.description}</div>
+                <div class="quest-status">Status: Accepted</div>
+                <div class="quest-reward">Reward: ${quest.reward} gold</div>
+            `;
+            questsList.appendChild(questItem);
+        });
     }
 
-    activeQuests.forEach(playerQuest => {
-        const quest = GAME_DATA.quests[playerQuest.id];
-        if (!quest) return;
-        const questItem = document.createElement('div');
-        questItem.className = playerQuest.completed ? 'quest-item completed' : 'quest-item';
-        questItem.innerHTML = `
-            <div class="quest-title">${quest.title} ${playerQuest.completed ? '✓' : ''}</div>
-            <div class="quest-description">${quest.description}</div>
-            <div class="quest-status">Status: ${playerQuest.completed ? 'Completed' : 'Accepted'}</div>
-            <div class="quest-reward">Reward: ${quest.reward} gold</div>
-        `;
-        questsList.appendChild(questItem);
-    });
+    if (completedQuests.length > 0) {
+        questsList.innerHTML += '<h3>Completed Quests</h3>';
+        completedQuests.forEach(playerQuest => {
+            const quest = GAME_DATA.quests[playerQuest.id];
+            if (!quest) return;
+            const questItem = document.createElement('div');
+            questItem.className = 'quest-item completed';
+            const systemIndicator = quest.type === 'system' ? ' (System Quest)' : '';
+            questItem.innerHTML = `
+                <div class="quest-title">${quest.title} ✓${systemIndicator}</div>
+                <div class="quest-description">${quest.description}</div>
+                <div class="quest-status">Status: Completed</div>
+                <div class="quest-reward">Reward: ${quest.reward} gold</div>
+            `;
+            questsList.appendChild(questItem);
+        });
+    }
 }
 
 // ============ COMBAT SYSTEM ============
@@ -1582,26 +1612,38 @@ function updateInventoryScreen() {
         const itemSlot = document.createElement('div');
         itemSlot.className = 'item-slot';
 
-        // Display a read button for books
+        itemSlot.innerHTML = `
+            <strong>${itemData.name}</strong> x${item.quantity}
+            <br><small>Value: ${itemData.gold} gold</small>
+        `;
+
+        const actionButton = document.createElement('button');
+        actionButton.className = 'btn btn-secondary inventory-action-btn';
+
         if (itemData.type === 'book') {
-            itemSlot.innerHTML = `
-                <strong>${itemData.name}</strong> x${item.quantity}
-                <br><small>Book</small>
-                <br><button class="btn btn-secondary read-book-btn">Read</button>
-            `;
-            const readBtn = itemSlot.querySelector('.read-book-btn');
-            readBtn.addEventListener('click', (event) => {
+            actionButton.textContent = 'Read';
+            actionButton.addEventListener('click', (event) => {
                 event.stopPropagation();
                 readBook(item.id);
             });
+        } else if (itemData.effect) {
+            actionButton.textContent = 'Use';
+            actionButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const confirmUse = confirm(`Use ${itemData.name}?`);
+                if (confirmUse) {
+                    useItem(item.id);
+                }
+            });
         } else {
-            itemSlot.innerHTML = `
-                <strong>${itemData.name}</strong> x${item.quantity}
-                <br><small>Value: ${itemData.gold} gold</small>
-            `;
-            itemSlot.addEventListener('click', () => useItem(item.id));
+            actionButton.textContent = 'Inspect';
+            actionButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                alert(`${itemData.name}: ${itemData.description || 'No description available.'}`);
+            });
         }
 
+        itemSlot.appendChild(actionButton);
         inventoryList.appendChild(itemSlot);
     });
 
@@ -1816,6 +1858,35 @@ function updateMapScreen() {
 }
 
 // ============ SAVE/LOAD SYSTEM ============
+function getSavedGameForCurrentUser() {
+    const rawSaves = localStorage.getItem('aetheria_saves');
+    let saves = {};
+    try {
+        saves = rawSaves ? JSON.parse(rawSaves) : {};
+    } catch (err) {
+        console.error('Unable to parse saved games index', err);
+        saves = {};
+    }
+
+    const save = saves[gameState.username];
+    if (save && save.username === gameState.username) {
+        return save;
+    }
+
+    const legacySave = localStorage.getItem('aetheria_save');
+    if (legacySave) {
+        try {
+            const parsed = JSON.parse(legacySave);
+            if (parsed.username === gameState.username) {
+                return parsed;
+            }
+        } catch (err) {
+            console.error('Unable to parse legacy save', err);
+        }
+    }
+    return null;
+}
+
 function saveGame() {
     if (!confirm('Save your current progress?')) {
         return;
@@ -1838,11 +1909,27 @@ function saveGame() {
             inventory: gameState.player.inventory,
             currentLocation: gameState.player.currentLocation,
             quests: gameState.player.quests,
-            unlockedClasses: gameState.player.unlockedClasses
+            unlockedClasses: gameState.player.unlockedClasses,
+            locationsVisited: Array.from(gameState.player.locationsVisited || []),
+            guild: gameState.player.guild || {},
+            pet: gameState.player.pet || {},
+            questProgress: gameState.player.questProgress || {},
+            achievements: gameState.player.achievements || {},
+            factionRep: gameState.player.factionRep || {},
+            activeEnchantments: gameState.player.activeEnchantments || {}
         }
     };
 
-    // Save locally
+    const rawSaves = localStorage.getItem('aetheria_saves');
+    let saves = {};
+    try {
+        saves = rawSaves ? JSON.parse(rawSaves) : {};
+    } catch (err) {
+        console.error('Unable to parse saved games index', err);
+        saves = {};
+    }
+    saves[gameState.username] = saveData;
+    localStorage.setItem('aetheria_saves', JSON.stringify(saves));
     localStorage.setItem('aetheria_save', JSON.stringify(saveData));
     
     // Save to server if available
@@ -1862,33 +1949,38 @@ function saveGame() {
     playSuccessSound();
 }
 
-function loadGame() {
-    const savedData = localStorage.getItem('aetheria_save');
-    if (savedData) {
-        const save = JSON.parse(savedData);
-        gameState.player = new Player(save.player.name, save.player.classType);
+function loadGame(savedData = null) {
+    const save = savedData || getSavedGameForCurrentUser();
+    if (!save) return;
+    gameState.player = new Player(save.player.name, save.player.classType);
 
-        // Restore player stats
-        gameState.player.hp = save.player.hp;
-        gameState.player.maxHP = save.player.maxHP;
-        gameState.player.mp = save.player.mp;
-        gameState.player.maxMP = save.player.maxMP;
-        gameState.player.attack = save.player.attack;
-        gameState.player.defense = save.player.defense;
-        gameState.player.speed = save.player.speed;
-        gameState.player.level = save.player.level;
-        gameState.player.exp = save.player.exp;
-        gameState.player.gold = save.player.gold;
-        gameState.player.inventory = save.player.inventory;
-        gameState.player.currentLocation = save.player.currentLocation;
-        gameState.player.quests = save.player.quests;
-        gameState.player.unlockedClasses = save.player.unlockedClasses || {};
+    // Restore player stats
+    gameState.player.hp = save.player.hp;
+    gameState.player.maxHP = save.player.maxHP;
+    gameState.player.mp = save.player.mp;
+    gameState.player.maxMP = save.player.maxMP;
+    gameState.player.attack = save.player.attack;
+    gameState.player.defense = save.player.defense;
+    gameState.player.speed = save.player.speed;
+    gameState.player.level = save.player.level;
+    gameState.player.exp = save.player.exp;
+    gameState.player.gold = save.player.gold;
+    gameState.player.inventory = save.player.inventory || [];
+    gameState.player.currentLocation = save.player.currentLocation;
+    gameState.player.quests = save.player.quests || {};
+    gameState.player.unlockedClasses = save.player.unlockedClasses || {};
+    gameState.player.locationsVisited = new Set(save.player.locationsVisited || [gameState.player.currentLocation || 'village']);
+    gameState.player.guild = save.player.guild || gameState.player.guild;
+    gameState.player.pet = save.player.pet || gameState.player.pet;
+    gameState.player.questProgress = save.player.questProgress || gameState.player.questProgress;
+    gameState.player.achievements = save.player.achievements || gameState.player.achievements;
+    gameState.player.factionRep = save.player.factionRep || gameState.player.factionRep;
+    gameState.player.activeEnchantments = save.player.activeEnchantments || gameState.player.activeEnchantments;
 
-        gameState.gameStarted = true;
-        showScreen('mainGame');
-        updateUI();
-        loadLocation(save.player.currentLocation);
-    }
+    gameState.gameStarted = true;
+    showScreen('mainGame');
+    updateUI();
+    loadLocation(gameState.player.currentLocation);
 }
 
 // ============ GUILD SYSTEM ============

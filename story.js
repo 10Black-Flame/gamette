@@ -42,6 +42,7 @@ class Player {
         this.skillPoints = 0;
         this.skillTree = {};
         this.unlockedClasses = {};
+        this.booksRead = [];
         this.activeEnchantments = {};
     }
 
@@ -88,7 +89,8 @@ class Player {
         
         // Check level-based achievements
         if (this.level >= 5) unlockAchievement('risingHero');
-        if (this.level >= 10) unlockAchievement('legendaryHero');
+        if (this.level >= 10) unlockAchievement('level_10');
+        if (this.level >= 50) unlockAchievement('level_50');
         if (this.level >= 15) this.checkHiddenClassUnlock();
         if (this.level >= 20 && this.prestige < 1) {
             addGameLog('You have reached the pinnacle of power! Prestige is now available.', 'success');
@@ -873,6 +875,7 @@ function setupMainGameControls() {
     // Close Buttons
     document.getElementById('close-inventory-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-quests-btn').addEventListener('click', () => showScreen('mainGame'));
+    document.getElementById('close-quest-board-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-map-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('scan-map-btn').addEventListener('click', () => scanForClues('map'));
     document.getElementById('close-guild-btn').addEventListener('click', () => showScreen('mainGame'));
@@ -1050,6 +1053,17 @@ function loadLocation(locationId) {
         });
     }
 
+    // Update Wild Pets
+    if (location.wildPets && location.wildPets.length > 0) {
+        location.wildPets.forEach(petId => {
+            const pet = GAME_DATA.pets.find(p => p.id === petId);
+            if (pet) {
+                const petElement = createWildPetElement(pet);
+                npcsList.appendChild(petElement);
+            }
+        });
+    }
+
     // Update Items
     const itemsList = document.getElementById('items-list');
     itemsList.innerHTML = '';
@@ -1131,6 +1145,18 @@ function createEnemyElement(enemy) {
         <div class="npc-item-description">HP: ${enemy.hp} | Attack: ${enemy.attack}</div>
     `;
     element.addEventListener('click', () => startCombat(enemy));
+    return element;
+}
+
+function createWildPetElement(pet) {
+    const element = document.createElement('div');
+    element.className = 'npc-item';
+    element.style.borderColor = '#4CAF50';
+    element.innerHTML = `
+        <div class="npc-item-header" style="color: #4CAF50;">🐾 ${pet.name} (${pet.specie})</div>
+        <div class="npc-item-description">Grade: ${pet.grade} | HP: ${pet.hp} | MP: ${pet.mp}</div>
+    `;
+    element.addEventListener('click', () => tryCatchPet(pet));
     return element;
 }
 
@@ -1227,6 +1253,9 @@ function interactWithNPC(npc) {
         return;
     } else if (npc.type === 'quest_giver') {
         if (offerQuestToPlayer(npc)) return;
+    } else if (npc.type === 'quest_board') {
+        openQuestBoard();
+        return;
     }
     
     alert(`${npc.name}${emotionModifier}: "${dialogue}"`);
@@ -1271,6 +1300,62 @@ function buyItem(item) {
     }
 }
 
+function openQuestBoard() {
+    const questBoardList = document.getElementById('quest-board-list');
+    questBoardList.innerHTML = '';
+
+    Object.values(GAME_DATA.quests).forEach(quest => {
+        const playerQuest = gameState.player.quests[quest.id];
+        if (!playerQuest || !playerQuest.completed) {
+            const questItem = document.createElement('div');
+            questItem.className = 'quest-board-item';
+            const systemIndicator = quest.type === 'system' ? ' (System Quest)' : '';
+            questItem.innerHTML = `
+                <div class="quest-title">${quest.title}${systemIndicator}</div>
+                <div class="quest-description">${quest.description}</div>
+                <div class="quest-reward">Reward: ${quest.reward} gold</div>
+                <button class="btn btn-primary accept-quest-btn" data-quest="${quest.id}">Accept Quest</button>
+            `;
+            questBoardList.appendChild(questItem);
+        }
+    });
+
+    // Add event listeners
+    questBoardList.querySelectorAll('.accept-quest-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const questId = btn.dataset.quest;
+            const quest = GAME_DATA.quests[questId];
+            if (quest.type === 'system') {
+                gameState.player.quests[questId] = {
+                    id: questId,
+                    status: 'completed',
+                    completed: true,
+                    giver: null
+                };
+                rewardQuest(questId);
+                addGameLog(`System quest completed: ${quest.title}`, 'success');
+                updateQuestsScreen();
+                openQuestBoard(); // Refresh
+            } else {
+                const accept = confirm(`Accept quest: ${quest.title}?`);
+                if (accept) {
+                    gameState.player.quests[questId] = {
+                        id: questId,
+                        status: 'accepted',
+                        completed: false,
+                        giver: null
+                    };
+                    addGameLog(`Accepted quest: ${quest.title}`, 'success');
+                    updateQuestsScreen();
+                    openQuestBoard(); // Refresh
+                }
+            }
+        });
+    });
+
+    showScreen('questBoard');
+}
+
 function pickUpItem(item) {
     gameState.player.addItem(item.id);
     const location = GAME_DATA.locations[gameState.player.currentLocation];
@@ -1279,6 +1364,43 @@ function pickUpItem(item) {
         location.items.splice(itemIndex, 1);
     }
     addGameLog(`Picked up ${item.name}`);
+    loadLocation(gameState.player.currentLocation);
+}
+
+function tryCatchPet(pet) {
+    const catchChance = 0.5; // 50% chance, can be adjusted based on pet rarity or player skills
+    if (Math.random() < catchChance) {
+        // Catch successful
+        if (!gameState.player.pet || !gameState.player.pet.caught) {
+            gameState.player.pet = {
+                caught: true,
+                petType: pet.id,
+                level: 1,
+                exp: 0,
+                name: pet.name,
+                specie: pet.specie,
+                grade: pet.grade,
+                hp: pet.hp,
+                mp: pet.mp,
+                attack: pet.attack,
+                defense: pet.defense,
+                speed: pet.speed
+            };
+            addGameLog(`You caught a ${pet.name}!`, 'success');
+            unlockAchievement('pet_catcher');
+            playSuccessSound();
+            updatePetScreen();
+        } else {
+            alert('You already have a pet! Release your current pet first.');
+        }
+    } else {
+        addGameLog(`The ${pet.name} escaped!`, 'neutral');
+    }
+    // Remove the pet from the location after attempt
+    const location = GAME_DATA.locations[gameState.player.currentLocation];
+    if (location.wildPets) {
+        location.wildPets = location.wildPets.filter(id => id !== pet.id);
+    }
     loadLocation(gameState.player.currentLocation);
 }
 
@@ -1360,6 +1482,13 @@ function completeQuest(questId, returningNpcId) {
     playerQuest.completedAt = Date.now();
     rewardQuest(questId);
     addGameLog(`Quest Complete! ${quest.title} - +${quest.reward} gold`, 'success');
+    
+    // Check first quest achievement
+    const completedQuests = Object.values(gameState.player.quests).filter(q => q.completed);
+    if (completedQuests.length === 1) {
+        unlockAchievement('first_quest');
+    }
+    
     updateUI();
     updateQuestsScreen();
 }
@@ -1660,6 +1789,15 @@ function readBook(bookId) {
     document.getElementById('book-reader-title').textContent = bookData.name;
     document.getElementById('book-reader-content').textContent = content;
 
+    // Track books read for achievement
+    gameState.player.booksRead = gameState.player.booksRead || [];
+    if (!gameState.player.booksRead.includes(bookId)) {
+        gameState.player.booksRead.push(bookId);
+        if (gameState.player.booksRead.length >= 5) {
+            unlockAchievement('bookworm');
+        }
+    }
+
     // Grant skill bonuses based on book type
     applyBookSkillBonus(bookId);
 
@@ -1916,7 +2054,8 @@ function saveGame() {
             questProgress: gameState.player.questProgress || {},
             achievements: gameState.player.achievements || {},
             factionRep: gameState.player.factionRep || {},
-            activeEnchantments: gameState.player.activeEnchantments || {}
+            activeEnchantments: gameState.player.activeEnchantments || {},
+            booksRead: gameState.player.booksRead || []
         }
     };
 
@@ -1931,6 +2070,11 @@ function saveGame() {
     saves[gameState.username] = saveData;
     localStorage.setItem('aetheria_saves', JSON.stringify(saves));
     localStorage.setItem('aetheria_save', JSON.stringify(saveData));
+    
+    // Check merchant achievement
+    if (gameState.player.gold >= 10000) {
+        unlockAchievement('merchant');
+    }
     
     // Save to server if available
     if (gameState.isServerMode && gameState.userId) {
@@ -1976,6 +2120,7 @@ function loadGame(savedData = null) {
     gameState.player.achievements = save.player.achievements || gameState.player.achievements;
     gameState.player.factionRep = save.player.factionRep || gameState.player.factionRep;
     gameState.player.activeEnchantments = save.player.activeEnchantments || gameState.player.activeEnchantments;
+    gameState.player.booksRead = save.player.booksRead || [];
 
     gameState.gameStarted = true;
     showScreen('mainGame');
@@ -2647,40 +2792,37 @@ function unlockAchievement(achieveId) {
 function updatePetScreen() {
     const petInfo = document.getElementById('pet-info');
     
-    if (gameState.player.pet.caught) {
-        const pet = GAME_DATA.pets[gameState.player.pet.petType];
-        petInfo.innerHTML = `
-            <div style="text-align: center; background: rgba(20, 40, 60, 0.8); padding: 20px; border-radius: 8px;">
-                <div style="font-size: 3em; margin-bottom: 10px;">${pet.emoji}</div>
-                <div class="pet-name">${pet.name}</div>
-                <div class="pet-rarity" style="margin: 10px 0;">⭐ ${pet.rarity}</div>
-                <div class="pet-description">Level ${gameState.player.pet.level}</div>
-                <p style="color: #b0b0b0; margin-top: 10px;">${pet.description}</p>
-                <button class="btn" id="release-pet-btn" style="margin-top: 10px;">Release Pet</button>
-            </div>
-        `;
-        document.getElementById('release-pet-btn').addEventListener('click', releasePet);
+    if (gameState.player.pet && gameState.player.pet.caught) {
+        const petData = gameState.player.pet;
+        const pet = GAME_DATA.pets.find(p => p.id === petData.petType);
+        if (pet) {
+            petInfo.innerHTML = `
+                <div style="text-align: center; background: rgba(20, 40, 60, 0.8); padding: 20px; border-radius: 8px;">
+                    <div style="font-size: 3em; margin-bottom: 10px;">🐾</div>
+                    <div class="pet-name">${petData.name}</div>
+                    <div class="pet-specie">Specie: ${petData.specie}</div>
+                    <div class="pet-grade">Grade: ${petData.grade}</div>
+                    <div class="pet-stats">
+                        <div>HP: ${petData.hp}</div>
+                        <div>MP: ${petData.mp}</div>
+                        <div>Attack: ${petData.attack}</div>
+                        <div>Defense: ${petData.defense}</div>
+                        <div>Speed: ${petData.speed}</div>
+                        <div>Level: ${petData.level}</div>
+                    </div>
+                    <p style="color: #b0b0b0; margin-top: 10px;">${pet.description}</p>
+                    <button class="btn" id="release-pet-btn" style="margin-top: 10px;">Release Pet</button>
+                </div>
+            `;
+            document.getElementById('release-pet-btn').addEventListener('click', releasePet);
+        }
     } else {
-        petInfo.innerHTML = '<p style="color: #b0b0b0; text-align: center;">You have not caught a pet yet.</p>';
+        petInfo.innerHTML = '<p style="color: #b0b0b0; text-align: center;">You have not caught a pet yet. Look for wild pets in the wilderness!</p>';
     }
 
+    // Remove the pet list since catching is now in wild
     const petList = document.getElementById('pets-list');
     petList.innerHTML = '';
-    petList.className = 'pet-grid';
-    
-    Object.keys(GAME_DATA.pets).forEach(petId => {
-        const pet = GAME_DATA.pets[petId];
-        const petCard = document.createElement('div');
-        petCard.className = 'pet-card';
-        petCard.innerHTML = `
-            <div class="pet-emoji">${pet.emoji}</div>
-            <div class="pet-name">${pet.name}</div>
-            <div class="pet-rarity">⭐ ${pet.rarity}</div>
-            <button class="btn" id="catch-${petId}-btn" style="margin-top: 8px; width: 100%;">Catch</button>
-        `;
-        petList.appendChild(petCard);
-        document.getElementById(`catch-${petId}-btn`).addEventListener('click', () => catchPet(petId));
-    });
 }
 
 function catchPet(petId) {

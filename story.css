@@ -799,6 +799,18 @@ em, i {
     opacity: 0.7;
 }
 
+.quest-board-item {
+    background: rgba(20, 40, 60, 0.8);
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border-left: 4px solid #4CAF50;
+}
+
+.quest-board-item .accept-quest-btn {
+    margin-top: 10px;
+}
+
 .quest-title {
     color: #ffd700;
     font-weight: bold;

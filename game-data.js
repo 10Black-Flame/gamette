@@ -140,7 +140,7 @@ const GAME_DATA = {
             id: 'village',
             name: 'Aldermere Village',
             description: 'A peaceful village nestled in a green valley. Smoke rises from chimneys and the aroma of freshly baked bread fills the air. The village square has an inn, a blacksmith, an alchemist shop, and a small temple. Children play in the streets while merchants hawk their wares.',
-            npcs: ['innkeeper', 'blacksmith', 'alchemist', 'priest', 'merchant', 'guard', 'farmer', 'bard', 'mayor'],
+            npcs: ['innkeeper', 'blacksmith', 'alchemist', 'priest', 'merchant', 'guard', 'farmer', 'bard', 'mayor', 'quest_board'],
             items: ['bread', 'apple'],
             exits: {
                 forest: 'Head north to Dark Forest',
@@ -177,6 +177,7 @@ const GAME_DATA = {
             npcs: ['herbalist', 'hunter'],
             enemies: ['goblin', 'goblin', 'wolf'],
             items: ['herb', 'mushroom'],
+            wildPets: ['wolf', 'sprite'],
             exits: { village: 'Return to village', mountains: 'Head east to Rocky Mountains', cave: 'Enter dark cave' }
         },
         cave: {
@@ -195,6 +196,7 @@ const GAME_DATA = {
             npcs: [],
             enemies: ['wolf', 'wolf', 'mountain_troll'],
             items: ['ore', 'silver_ore'],
+            wildPets: ['golem'],
             exits: { village: 'Return to village', forest: 'Return to forest', tower: 'Climb to Sky Tower' }
         },
         tower: {
@@ -204,6 +206,7 @@ const GAME_DATA = {
             npcs: [],
             enemies: ['arcane_golem', 'shadow_mage'],
             items: ['staff', 'mana_crystal'],
+            wildPets: ['phoenix'],
             exits: { mountains: 'Descend to mountains' }
         },
         castle: {
@@ -222,6 +225,7 @@ const GAME_DATA = {
             npcs: ['thief'],
             enemies: ['shadow_beast', 'shadow_beast', 'shadow_lord'],
             items: ['treasure_chest', 'ancient_key'],
+            wildPets: ['shadow_cat'],
             exits: { castle: 'Ascend to castle' }
         }
     },
@@ -392,6 +396,15 @@ const GAME_DATA = {
             quest: 'translate_ancient_text',
             personality: 'analytical',
             intelligence: 'genius'
+        },
+        quest_board: {
+            id: 'quest_board',
+            name: 'Quest Board',
+            description: 'A weathered wooden board nailed to the village notice post, covered in pinned parchments.',
+            dialogue: 'Various quests and tasks are posted here for adventurers willing to help the village.',
+            type: 'quest_board',
+            personality: 'neutral',
+            intelligence: 'none'
         }
     },
 
@@ -591,7 +604,8 @@ const GAME_DATA = {
             description: 'Evil lurks in the castle dungeon. Brother Isaiah believes only a true hero can stop it.',
             reward: 2000,
             required: true,
-            startLocation: 'dungeon'
+            startLocation: 'dungeon',
+            type: 'system'
         },
         find_ancient_tome: {
             id: 'find_ancient_tome',
@@ -599,7 +613,8 @@ const GAME_DATA = {
             description: 'Archmage Eldrin Voss needs a rare ancient tome that was stolen from the library. It might be in the goblin cave.',
             reward: 800,
             required: false,
-            startLocation: 'library'
+            startLocation: 'library',
+            type: 'system'
         },
         test_invention: {
             id: 'test_invention',
@@ -970,17 +985,105 @@ const GAME_DATA = {
         { id: 'master_crafter', name: 'Master Crafter', description: 'Craft 10 items', reward: 1500 },
         { id: 'shadow_lord_victory', name: 'World Savior', description: 'Defeat the Shadow Lord', reward: 3000 },
         { id: 'perfect_guild', name: 'Guild Master', description: 'Join a guild and reach level 10', reward: 2000 },
-        { id: 'unlock_hidden_class', name: 'Secret Revealed', description: 'Unlock a hidden class', reward: 1000 }
+        { id: 'unlock_hidden_class', name: 'Secret Revealed', description: 'Unlock a hidden class', reward: 1000 },
+        { id: 'first_quest', name: 'Quest Beginner', description: 'Complete your first quest', reward: 200 },
+        { id: 'pet_catcher', name: 'Pet Catcher', description: 'Catch your first pet', reward: 300 },
+        { id: 'bookworm', name: 'Bookworm', description: 'Read 5 books', reward: 400 },
+        { id: 'merchant', name: 'Merchant', description: 'Earn 10,000 gold', reward: 1000 },
+        { id: 'spell_master', name: 'Spell Master', description: 'Cast 100 spells', reward: 800 },
+        { id: 'survivor', name: 'Survivor', description: 'Survive 50 combats without fleeing', reward: 600 },
+        { id: 'guild_leader', name: 'Guild Leader', description: 'Create your own guild', reward: 1500 },
+        { id: 'enchantment_expert', name: 'Enchantment Expert', description: 'Apply 10 enchantments', reward: 700 },
+        { id: 'dungeon_crawler', name: 'Dungeon Crawler', description: 'Clear 5 dungeons', reward: 1200 },
+        { id: 'prestige_achiever', name: 'Prestige Achiever', description: 'Reach prestige level 1', reward: 5000 }
     ],
 
     // Pet Companions
     pets: [
-        { id: 'wolf', name: 'Wolf', rarity: 'common', bonus: { attack: 5, speed: 2 }, description: 'Loyal wolf companion' },
-        { id: 'phoenix', name: 'Phoenix', rarity: 'rare', bonus: { attack: 8, maxHP: 30, fire_resist: 0.2 }, description: 'Legendary fire bird' },
-        { id: 'dragon', name: 'Dragon', rarity: 'epic', bonus: { attack: 15, defense: 10, speed: 5 }, description: 'Most powerful companion' },
-        { id: 'sprite', name: 'Fairy Sprite', rarity: 'rare', bonus: { mp: 20, magic_damage: 0.1 }, description: 'Magical fairy ally' },
-        { id: 'golem', name: 'Stone Golem', rarity: 'rare', bonus: { defense: 15, maxHP: 50 }, description: 'Unbreakable defender' },
-        { id: 'shadow_cat', name: 'Shadow Cat', rarity: 'epic', bonus: { speed: 8, stealth: 0.5, critical: 0.1 }, description: 'Silent assassin' }
+        { 
+            id: 'wolf', 
+            name: 'Wolf', 
+            specie: 'Canine', 
+            grade: 'Common', 
+            hp: 50, 
+            mp: 20, 
+            attack: 10, 
+            defense: 5, 
+            speed: 15, 
+            rarity: 'common', 
+            bonus: { attack: 5, speed: 2 }, 
+            description: 'Loyal wolf companion' 
+        },
+        { 
+            id: 'phoenix', 
+            name: 'Phoenix', 
+            specie: 'Avian', 
+            grade: 'Rare', 
+            hp: 80, 
+            mp: 60, 
+            attack: 15, 
+            defense: 10, 
+            speed: 20, 
+            rarity: 'rare', 
+            bonus: { attack: 8, maxHP: 30, fire_resist: 0.2 }, 
+            description: 'Legendary fire bird' 
+        },
+        { 
+            id: 'dragon', 
+            name: 'Dragon', 
+            specie: 'Draconic', 
+            grade: 'Epic', 
+            hp: 150, 
+            mp: 100, 
+            attack: 25, 
+            defense: 20, 
+            speed: 10, 
+            rarity: 'epic', 
+            bonus: { attack: 15, defense: 10, speed: 5 }, 
+            description: 'Most powerful companion' 
+        },
+        { 
+            id: 'sprite', 
+            name: 'Fairy Sprite', 
+            specie: 'Fey', 
+            grade: 'Rare', 
+            hp: 40, 
+            mp: 80, 
+            attack: 5, 
+            defense: 5, 
+            speed: 25, 
+            rarity: 'rare', 
+            bonus: { mp: 20, magic_damage: 0.1 }, 
+            description: 'Magical fairy ally' 
+        },
+        { 
+            id: 'golem', 
+            name: 'Stone Golem', 
+            specie: 'Construct', 
+            grade: 'Rare', 
+            hp: 120, 
+            mp: 0, 
+            attack: 20, 
+            defense: 25, 
+            speed: 5, 
+            rarity: 'rare', 
+            bonus: { defense: 15, maxHP: 50 }, 
+            description: 'Unbreakable defender' 
+        },
+        { 
+            id: 'shadow_cat', 
+            name: 'Shadow Cat', 
+            specie: 'Feline', 
+            grade: 'Epic', 
+            hp: 60, 
+            mp: 40, 
+            attack: 18, 
+            defense: 8, 
+            speed: 30, 
+            rarity: 'epic', 
+            bonus: { speed: 8, stealth: 0.5, critical: 0.1 }, 
+            description: 'Silent assassin' 
+        }
     ],
 
     // Factions (Reputation System)

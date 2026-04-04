@@ -82,6 +82,10 @@ em, i {
     display: block;
 }
 
+.hidden {
+    display: none !important;
+}
+
 @keyframes fadeInScale {
     from {
         opacity: 0;
@@ -416,6 +420,16 @@ em, i {
     color: #d0d0d0;
     margin-bottom: 20px;
     font-style: italic;
+}
+
+.location-note {
+    color: #ffd700;
+    font-size: 0.95em;
+    margin-bottom: 18px;
+    padding: 10px;
+    background: rgba(255, 215, 0, 0.08);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 6px;
 }
 
 .npcs-section,
@@ -1031,6 +1045,72 @@ em, i {
     color: #d0d0d0;
 }
 
+.reward-notice {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 20px;
+    margin: 20px 0;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 255, 136, 0.25);
+    border-radius: 12px;
+    color: #00ff88;
+}
+
+.reward-notice.hidden {
+    display: none;
+}
+
+.player-exp {
+    margin-top: 8px;
+}
+
+.exp-bar {
+    width: 100%;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.exp-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #4a90e2 0%, #00ff88 100%);
+    transition: width 0.4s ease;
+}
+
+#exp-text {
+    margin-top: 6px;
+    font-size: 0.85em;
+    color: #b0b0b0;
+}
+
+.reward-summary {
+    background: rgba(20, 40, 60, 0.9);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 10px;
+    padding: 16px;
+    margin: 18px 0;
+    color: #d0d0d0;
+}
+
+.reward-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 8px;
+}
+
+.reward-item:last-child {
+    margin-bottom: 0;
+}
+
 /* Guild Screen */
 .guild-item {
     background: rgba(20, 40, 60, 0.8);
@@ -1059,6 +1139,32 @@ em, i {
     margin: 20px 0;
 }
 
+.crafting-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.toggle-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95em;
+    color: #b0b0b0;
+}
+
+.toggle-control input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #ffd700;
+}
+
+.toggle-label {
+    color: #ffd700;
+}
+
 .recipes-list,
 .crafting-info {
     background: rgba(10, 20, 40, 0.6);
@@ -1085,6 +1191,113 @@ em, i {
 .recipe-item:hover {
     background: rgba(40, 80, 120, 0.9);
     border-left-color: #ffd700;
+}
+
+.recipe-item.selected {
+    background: rgba(255, 215, 0, 0.08);
+    border-left-color: #ffd700;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.18);
+}
+
+.recipe-item.craftable {
+    border-left-color: #4CAF50;
+}
+
+.recipe-item.locked {
+    opacity: 0.8;
+}
+
+.recipe-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8em;
+    font-weight: bold;
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.recipe-badge.ready-now {
+    background: rgba(0, 255, 136, 0.16);
+    color: #00ff88;
+    border-color: rgba(0, 255, 136, 0.25);
+}
+
+.recipe-status {
+    color: #b0b0b0;
+    font-size: 0.8em;
+    margin-top: 4px;
+}
+
+.crafting-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.crafting-subtitle {
+    color: #4a90e2;
+    font-size: 0.95em;
+}
+
+.crafted-item-details {
+    color: #b0b0b0;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.crafting-ingredients {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.ingredient-row {
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+.crafting-status {
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.crafting-status.ready {
+    background: rgba(0, 255, 136, 0.08);
+    border: 1px solid rgba(0, 255, 136, 0.18);
+    color: #00ff88;
+}
+
+.crafting-status.blocked {
+    background: rgba(255, 92, 92, 0.08);
+    border: 1px solid rgba(255, 92, 92, 0.18);
+    color: #ff5c5c;
+}
+
+.crafting-tracker {
+    color: #ffd700;
+    margin-top: 12px;
+    font-size: 0.95em;
+}
+
+.recipe-requirement {
+    color: #b0b0b0;
+    font-size: 0.85em;
 }
 
 .recipe-name {
@@ -1586,4 +1799,93 @@ em, i {
     color: #e0e0e0;
     border-radius: 5px;
     font-size: 1em;
+}
+
+/* Level Up & XP Animations */
+@keyframes levelUpAnimation {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1) rotate(5deg);
+        filter: drop-shadow(0 0 10px #ffd700);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes floatingXpText {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-80px) scale(0.8);
+        opacity: 0;
+    }
+}
+
+.level-up-indicator {
+    animation: levelUpAnimation 0.8s ease-out;
+}
+
+.floating-xp {
+    position: fixed;
+    pointer-events: none;
+    font-weight: bold;
+    font-size: 1.2em;
+    animation: floatingXpText 1.5s ease-out forwards;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+}
+
+.floating-xp.exp-text {
+    color: #00ff88;
+}
+
+/* Enemy XP Tooltip */
+.enemy-tooltip {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.enemy-tooltip .tooltip-text {
+    visibility: hidden;
+    width: 220px;
+    background: rgba(0, 0, 0, 0.95);
+    color: #ffd700;
+    text-align: center;
+    border-radius: 6px;
+    padding: 12px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -110px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: normal;
+    font-size: 0.9em;
+    line-height: 1.4;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.enemy-tooltip .tooltip-text::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.95) transparent transparent transparent;
+}
+
+.enemy-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
 }

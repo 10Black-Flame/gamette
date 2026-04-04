@@ -413,6 +413,7 @@ const GAME_DATA = {
         goblin: {
             id: 'goblin',
             name: 'Goblin',
+            level: 1,
             hp: 20,
             mp: 5,
             attack: 5,
@@ -425,6 +426,7 @@ const GAME_DATA = {
         goblinWarrior: {
             id: 'goblinWarrior',
             name: 'Goblin Warrior',
+            level: 2,
             hp: 35,
             mp: 5,
             attack: 8,
@@ -437,6 +439,7 @@ const GAME_DATA = {
         wolf: {
             id: 'wolf',
             name: 'Wolf',
+            level: 2,
             hp: 30,
             mp: 0,
             attack: 7,
@@ -449,6 +452,7 @@ const GAME_DATA = {
         mountain_troll: {
             id: 'mountain_troll',
             name: 'Mountain Troll',
+            level: 4,
             hp: 60,
             mp: 10,
             attack: 12,
@@ -461,6 +465,7 @@ const GAME_DATA = {
         skeleton: {
             id: 'skeleton',
             name: 'Skeleton',
+            level: 2,
             hp: 25,
             mp: 15,
             attack: 6,
@@ -473,6 +478,7 @@ const GAME_DATA = {
         dark_knight: {
             id: 'dark_knight',
             name: 'Dark Knight',
+            level: 5,
             hp: 80,
             mp: 20,
             attack: 15,
@@ -485,6 +491,7 @@ const GAME_DATA = {
         arcane_golem: {
             id: 'arcane_golem',
             name: 'Arcane Golem',
+            level: 6,
             hp: 70,
             mp: 30,
             attack: 10,
@@ -497,6 +504,7 @@ const GAME_DATA = {
         shadow_mage: {
             id: 'shadow_mage',
             name: 'Shadow Mage',
+            level: 6,
             hp: 50,
             mp: 40,
             attack: 12,
@@ -509,6 +517,7 @@ const GAME_DATA = {
         shadow_beast: {
             id: 'shadow_beast',
             name: 'Shadow Beast',
+            level: 5,
             hp: 55,
             mp: 20,
             attack: 11,
@@ -521,6 +530,7 @@ const GAME_DATA = {
         shadow_lord: {
             id: 'shadow_lord',
             name: 'Shadow Lord',
+            level: 10,
             hp: 150,
             mp: 60,
             attack: 20,
@@ -587,6 +597,8 @@ const GAME_DATA = {
             title: 'Explore the Cave',
             description: 'There are goblins in the cave near the forest. Investigate and clear them out.',
             reward: 500,
+            expReward: 200,
+            autoCompleteOnKill: true,
             required: false,
             startLocation: 'village'
         },
@@ -595,6 +607,8 @@ const GAME_DATA = {
             title: 'Slay the Mountain Troll',
             description: 'A dangerous troll terrorizes the mountain pass. The village needs your help to defeat it.',
             reward: 1000,
+            expReward: 350,
+            autoCompleteOnKill: true,
             required: false,
             startLocation: 'mountains'
         },
@@ -603,6 +617,8 @@ const GAME_DATA = {
             title: 'Defeat the Shadow Lord',
             description: 'Evil lurks in the castle dungeon. Brother Isaiah believes only a true hero can stop it.',
             reward: 2000,
+            expReward: 1000,
+            autoCompleteOnKill: true,
             required: true,
             startLocation: 'dungeon',
             type: 'system'
@@ -645,6 +661,8 @@ const GAME_DATA = {
             title: 'Clear the Goblin Camp',
             description: 'Captain Thorne reports increased goblin activity near the forest. Clear them out to protect the village.',
             reward: 700,
+            expReward: 250,
+            autoCompleteOnKill: true,
             required: false,
             startLocation: 'village'
         }

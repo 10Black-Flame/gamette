@@ -149,6 +149,10 @@
                 <div class="character-info">
                     <h2 id="player-name"></h2>
                     <p id="player-stats"></p>
+                    <div class="player-exp">
+                        <div class="exp-bar"><div id="exp-bar-fill"></div></div>
+                        <p id="exp-text"></p>
+                    </div>
                 </div>
                 <div class="game-menu">
                     <button class="btn-small" id="inventory-btn">Inventory</button>
@@ -180,11 +184,17 @@
                 </div>
             </div>
 
+            <div id="reward-notice" class="reward-notice hidden">
+                <p id="pending-reward-text"></p>
+                <button class="btn btn-primary" id="claim-pending-reward-btn">Claim Pending Reward</button>
+            </div>
+
             <div class="game-content">
                 <!-- Location View -->
                 <div id="location-view" class="location">
                     <h3 id="location-name"></h3>
                     <p id="location-description"></p>
+                    <p id="location-note" class="location-note"></p>
                     
                     <div class="npcs-section">
                         <h4>NPCs & Enemies</h4>
@@ -199,6 +209,9 @@
                     <div class="exits-section">
                         <h4>Exits</h4>
                         <div id="exits-list"></div>
+                    </div>
+                    <div class="location-actions">
+                        <button class="btn btn-secondary hidden" id="open-quest-board-btn">Open Mission Board</button>
                     </div>
                 </div>
 
@@ -229,6 +242,16 @@
                         <button class="btn" id="spell-btn">Cast Spell</button>
                         <button class="btn" id="defend-btn">Defend</button>
                         <button class="btn" id="flee-btn">Flee</button>
+                    </div>
+                </div>
+
+                <div id="combat-victory-modal" class="screen modal-screen hidden">
+                    <div class="modal-content">
+                        <h2 id="combat-victory-title">Enemy Defeated</h2>
+                        <p id="combat-victory-description">You can claim your spoils from the fallen enemy.</p>
+                        <div id="combat-rewards-summary" class="reward-summary"></div>
+                        <button class="btn btn-primary" id="claim-reward-btn">Claim Reward</button>
+                        <button class="btn btn-secondary" id="dismiss-reward-btn">Dismiss</button>
                     </div>
                 </div>
             </div>
@@ -392,7 +415,13 @@
                 <h2>⚒️ Crafting</h2>
                 <div class="crafting-grid">
                     <div class="recipes-list">
-                        <h3>Recipes</h3>
+                        <div class="crafting-toolbar">
+                            <h3>Recipes</h3>
+                            <label class="toggle-control">
+                                <input type="checkbox" id="sort-available-toggle">
+                                <span class="toggle-label">Sort by available recipes</span>
+                            </label>
+                        </div>
                         <div id="recipes-list"></div>
                     </div>
                     <div class="crafting-info">

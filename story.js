@@ -75,9 +75,10 @@ class Player {
     levelUp() {
         this.level++;
         this.exp -= this.expToLevel;
-        this.expToLevel = Math.floor(this.expToLevel * 1.1);
+        this.expToLevel = Math.max(200, Math.floor(this.expToLevel * 1.12 + this.level * 8));
+        this.skillPoints += 1;
         
-        this.maxHP += 10;
+        this.maxHP += 10 + Math.floor(this.level / 5);
         this.hp = this.maxHP;
         this.maxMP += 5;
         this.mp = this.maxMP;
@@ -86,6 +87,8 @@ class Player {
         
         addGameLog(`Level Up! You are now level ${this.level}!`, 'success');
         playLevelUpSound();
+        triggerLevelUpAnimation();
+        playLevelUpConfetti();
         
         // Check level-based achievements
         if (this.level >= 5) unlockAchievement('risingHero');
@@ -108,8 +111,29 @@ class Player {
         this.mp = Math.min(this.mp + amount, this.maxMP);
     }
 
+    getEquipmentBonus(stat) {
+        let bonus = 0;
+        if (!this.equipment) return bonus;
+        Object.values(this.equipment).forEach(itemId => {
+            const item = GAME_DATA.items[itemId];
+            if (!item) return;
+            if (stat === 'attack' && item.attack) bonus += item.attack;
+            if (stat === 'defense' && item.defense) bonus += item.defense;
+        });
+        return bonus;
+    }
+
+    getAttackPower() {
+        return this.attack + this.getEquipmentBonus('attack');
+    }
+
+    getDefensePower() {
+        return this.defense + this.getEquipmentBonus('defense');
+    }
+
     takeDamage(damage) {
-        const actualDamage = Math.max(damage - Math.floor(this.defense / 2), 1);
+        const defensePower = this.getDefensePower();
+        const actualDamage = Math.max(damage - Math.floor(defensePower * 0.6), 1);
         this.hp -= actualDamage;
         this.damageTakenInCombat += actualDamage;
         return actualDamage;
@@ -150,56 +174,49 @@ class Player {
     checkHiddenClassUnlock() {
         const hiddenClasses = GAME_DATA.hiddenClasses;
         
-        // Paladin: Reach level 10 with Warrior
-        if (this.classType === 'warrior' && this.level >= 10 && !this.unlockedClasses) {
+        if (this.classType === 'warrior' && this.level >= 10 && !this.unlockedClasses.paladin) {
             this.unlockedClasses = this.unlockedClasses || {};
             this.unlockedClasses.paladin = true;
             unlockAchievement('secretRevealed');
             addGameLog('Hidden class unlocked: Paladin! You can now switch to this class.', 'success');
         }
         
-        // Necromancer: Defeat 50 enemies
-        if (this.enemiesKilled >= 50 && !this.unlockedClasses) {
+        if (this.enemiesKilled >= 50 && !this.unlockedClasses.necromancer) {
             this.unlockedClasses = this.unlockedClasses || {};
             this.unlockedClasses.necromancer = true;
             unlockAchievement('secretRevealed');
             addGameLog('Hidden class unlocked: Necromancer! You can now switch to this class.', 'success');
         }
         
-        // Druid: Visit forest 10 times
-        if (this.locationsVisited.has('forest') && !this.unlockedClasses) {
+        if (this.locationsVisited.has('forest') && !this.unlockedClasses.druid) {
             this.unlockedClasses = this.unlockedClasses || {};
             this.unlockedClasses.druid = true;
             unlockAchievement('secretRevealed');
             addGameLog('Hidden class unlocked: Druid! You can now switch to this class.', 'success');
         }
         
-        // Shadow Assassin: Kill 20 enemies without taking damage
-        if (this.damageTakenInCombat === 0 && this.enemiesKilled >= 20 && !this.unlockedClasses) {
+        if (this.damageTakenInCombat === 0 && this.enemiesKilled >= 20 && !this.unlockedClasses.shadowAssassin) {
             this.unlockedClasses = this.unlockedClasses || {};
             this.unlockedClasses.shadowAssassin = true;
             unlockAchievement('secretRevealed');
             addGameLog('Hidden class unlocked: Shadow Assassin! You can now switch to this class.', 'success');
         }
         
-        // Demon Hunter: Already checked in levelUp
-        if (this.level >= 15 && !this.unlockedClasses) {
+        if (this.level >= 15 && !this.unlockedClasses.demonHunter) {
             this.unlockedClasses = this.unlockedClasses || {};
             this.unlockedClasses.demonHunter = true;
             unlockAchievement('secretRevealed');
             addGameLog('Hidden class unlocked: Demon Hunter! You can now switch to this class.', 'success');
         }
         
-        // Time Mage: Survive 100 days (need world time tracking)
-        if (worldTime && worldTime.totalDays >= 100 && !this.unlockedClasses) {
+        if (worldTime && worldTime.totalDays >= 100 && !this.unlockedClasses.timeMage) {
             this.unlockedClasses = this.unlockedClasses || {};
             this.unlockedClasses.timeMage = true;
             unlockAchievement('secretRevealed');
             addGameLog('Hidden class unlocked: Time Mage! You can now switch to this class.', 'success');
         }
         
-        // Warlock: Use 100 spells
-        if (this.spellsCast >= 100 && !this.unlockedClasses) {
+        if (this.spellsCast >= 100 && !this.unlockedClasses.warlock) {
             this.unlockedClasses = this.unlockedClasses || {};
             this.unlockedClasses.warlock = true;
             unlockAchievement('secretRevealed');
@@ -268,6 +285,7 @@ let gameState = {
     userId: null,
     username: null,
     playerId: null,
+    pendingCombatRewards: null,
     isServerMode: false // Set to true if server is running
 };
 
@@ -325,6 +343,36 @@ function playClickSound() { playSound(800, 100, 'square'); }
 function playSuccessSound() { playSound(600, 300, 'sine'); }
 function playErrorSound() { playSound(200, 500, 'sawtooth'); }
 function playLevelUpSound() { playSound(1000, 800, 'triangle'); }
+
+function triggerLevelUpAnimation() {
+    const playerName = document.getElementById('player-name');
+    if (playerName) {
+        playerName.classList.remove('level-up-indicator');
+        void playerName.offsetWidth;
+        playerName.classList.add('level-up-indicator');
+    }
+}
+
+function playLevelUpConfetti() {
+    if (gameState.player) {
+        for (let i = 0; i < 5; i++) {
+            setTimeout(() => {
+                const xp = gameState.player.level * 10;
+                createFloatingXpText(`+${xp} XP`, window.innerWidth / 2, 100);
+            }, i * 100);
+        }
+    }
+}
+
+function createFloatingXpText(text, x, y) {
+    const floatingText = document.createElement('div');
+    floatingText.className = 'floating-xp exp-text';
+    floatingText.textContent = text;
+    floatingText.style.left = (x + (Math.random() - 0.5) * 60) + 'px';
+    floatingText.style.top = y + 'px';
+    document.body.appendChild(floatingText);
+    setTimeout(() => floatingText.remove(), 1500);
+}
 
 // Content Pack System for Modular Expansions
 let loadedContentPacks = new Set();
@@ -772,7 +820,8 @@ function saveSessionState() {
         username: gameState.username,
         playerId: gameState.playerId,
         gameStarted: gameState.gameStarted,
-        player: null
+        player: null,
+        pendingCombatRewards: gameState.pendingCombatRewards || null
     };
 
     if (gameState.player) {
@@ -802,6 +851,9 @@ function loadSessionState() {
                 Object.assign(player, saved);
                 player.locationsVisited = new Set(saved.locationsVisited || [player.currentLocation || 'village']);
                 gameState.player = player;
+            }
+            if (data.pendingCombatRewards) {
+                gameState.pendingCombatRewards = data.pendingCombatRewards;
             }
 
             return true;
@@ -866,6 +918,14 @@ function setupMainGameControls() {
     document.getElementById('guild-btn').addEventListener('click', () => showScreen('guild'));
     document.getElementById('crafting-btn').addEventListener('click', () => showScreen('crafting'));
     document.getElementById('achievements-btn').addEventListener('click', () => showScreen('achievements'));
+    const sortAvailableToggle = document.getElementById('sort-available-toggle');
+    if (sortAvailableToggle) {
+        sortAvailableToggle.addEventListener('change', (event) => {
+            if (!gameState.player.crafting) gameState.player.crafting = { selectedRecipeId: null, sortByAvailable: false };
+            gameState.player.crafting.sortByAvailable = event.target.checked;
+            updateCraftingScreen();
+        });
+    }
     document.getElementById('pet-btn').addEventListener('click', () => showScreen('pet'));
     document.getElementById('enchantments-btn').addEventListener('click', () => showScreen('enchantments'));
     document.getElementById('classes-btn').addEventListener('click', () => showScreen('classes'));
@@ -876,10 +936,15 @@ function setupMainGameControls() {
     document.getElementById('close-inventory-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-quests-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-quest-board-btn').addEventListener('click', () => showScreen('mainGame'));
+    document.getElementById('open-quest-board-btn').addEventListener('click', openQuestBoard);
     document.getElementById('close-map-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('scan-map-btn').addEventListener('click', () => scanForClues('map'));
     document.getElementById('close-guild-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-crafting-btn').addEventListener('click', () => showScreen('mainGame'));
+    document.getElementById('craft-btn').addEventListener('click', () => {
+        const recipeId = document.getElementById('craft-btn').dataset.recipeId;
+        if (recipeId) craftItem(recipeId);
+    });
     document.getElementById('close-achievements-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-pet-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-enchantments-btn').addEventListener('click', () => showScreen('mainGame'));
@@ -934,6 +999,12 @@ function setupMainGameControls() {
     document.getElementById('spell-btn').addEventListener('click', combatCastSpell);
     document.getElementById('defend-btn').addEventListener('click', combatDefend);
     document.getElementById('flee-btn').addEventListener('click', combatFlee);
+    const claimRewardBtn = document.getElementById('claim-reward-btn');
+    if (claimRewardBtn) claimRewardBtn.addEventListener('click', claimCombatRewards);
+    const dismissRewardBtn = document.getElementById('dismiss-reward-btn');
+    if (dismissRewardBtn) dismissRewardBtn.addEventListener('click', hideCombatVictoryModal);
+    const claimPendingRewardBtn = document.getElementById('claim-pending-reward-btn');
+    if (claimPendingRewardBtn) claimPendingRewardBtn.addEventListener('click', claimCombatRewards);
 }
 
 // ============ SCREEN MANAGEMENT ============
@@ -995,6 +1066,8 @@ function updateUI() {
     
     // Update world info
     updateWorldInfo();
+    updatePlayerExpUI();
+    updatePendingRewardNotice();
 
     // Persist state to localStorage
     saveSessionState();
@@ -1011,6 +1084,94 @@ function updateWorldInfo() {
             `${worldSimulation.activeEvents.length} event(s): ${worldSimulation.activeEvents.map(e => e.name).join(', ')}` :
             'None';
     }
+}
+
+function updatePlayerExpUI() {
+    const player = gameState.player;
+    if (!player) return;
+    const expText = document.getElementById('exp-text');
+    const expFill = document.getElementById('exp-bar-fill');
+    if (expText) {
+        expText.textContent = `EXP: ${player.exp}/${player.expToLevel}`;
+    }
+    if (expFill) {
+        const fillPercent = player.expToLevel > 0 ? Math.min(100, Math.floor((player.exp / player.expToLevel) * 100)) : 0;
+        expFill.style.width = `${fillPercent}%`;
+    }
+}
+
+function updatePendingRewardNotice() {
+    const notice = document.getElementById('reward-notice');
+    const noticeText = document.getElementById('pending-reward-text');
+    if (!notice || !noticeText) return;
+    if (gameState.pendingCombatRewards) {
+        notice.classList.remove('hidden');
+        noticeText.textContent = `Defeated ${gameState.pendingCombatRewards.enemyName}. Claim ${gameState.pendingCombatRewards.exp} EXP and ${gameState.pendingCombatRewards.gold} gold.`;
+    } else {
+        notice.classList.add('hidden');
+        noticeText.textContent = '';
+    }
+}
+
+function showCombatVictoryModal() {
+    const pending = gameState.pendingCombatRewards;
+    if (!pending) return;
+
+    document.getElementById('combat-victory-title').textContent = `${pending.enemyName} defeated!`;
+    document.getElementById('combat-victory-description').textContent = 'Claim your spoils from the fallen enemy.';
+
+    const summary = document.getElementById('combat-rewards-summary');
+    if (summary) {
+        summary.innerHTML = '';
+        const expEntry = document.createElement('div');
+        expEntry.className = 'reward-item';
+        expEntry.innerHTML = `<span>Experience</span><strong>${pending.exp}</strong>`;
+        summary.appendChild(expEntry);
+
+        const goldEntry = document.createElement('div');
+        goldEntry.className = 'reward-item';
+        goldEntry.innerHTML = `<span>Gold</span><strong>${pending.gold}</strong>`;
+        summary.appendChild(goldEntry);
+
+        const dropEntry = document.createElement('div');
+        dropEntry.className = 'reward-item';
+        dropEntry.innerHTML = `<span>Drop</span><strong>${pending.droppedItemName || 'None'}</strong>`;
+        summary.appendChild(dropEntry);
+    }
+
+    const modal = document.getElementById('combat-victory-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('active');
+    }
+}
+
+function hideCombatVictoryModal() {
+    const modal = document.getElementById('combat-victory-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('active');
+    }
+}
+
+function claimCombatRewards() {
+    const pending = gameState.pendingCombatRewards;
+    if (!pending) return;
+
+    const player = gameState.player;
+    player.gainExp(pending.exp);
+    player.gold += pending.gold;
+
+    if (pending.droppedItemId && GAME_DATA.items[pending.droppedItemId]) {
+        player.addItem(pending.droppedItemId);
+        addGameLog(`Claimed drop: ${GAME_DATA.items[pending.droppedItemId].name}`, 'success');
+        player.treasuresFound++;
+    }
+
+    addGameLog(`Claimed rewards from ${pending.enemyName}: ${pending.exp} EXP and ${pending.gold} gold.`, 'success');
+    gameState.pendingCombatRewards = null;
+    hideCombatVictoryModal();
+    updateUI();
 }
 
 // ============ LOCATION SYSTEM ============
@@ -1030,6 +1191,12 @@ function loadLocation(locationId) {
     // Update location info
     document.getElementById('location-name').textContent = location.name;
     document.getElementById('location-description').textContent = location.description;
+    const locationNote = document.getElementById('location-note');
+    if (location.npcs.includes('quest_board')) {
+        locationNote.textContent = 'Mission Board available here! Click the Quest Board NPC or use the mission board button to view available village quests.';
+    } else {
+        locationNote.textContent = '';
+    }
 
     // Update NPCs
     const npcsList = document.getElementById('npcs-list');
@@ -1086,6 +1253,11 @@ function loadLocation(locationId) {
         exitsList.appendChild(exitElement);
     });
 
+    const questBoardButton = document.getElementById('open-quest-board-btn');
+    if (questBoardButton) {
+        questBoardButton.classList.toggle('hidden', !location.npcs.includes('quest_board'));
+    }
+
     updateUI();
 }
 
@@ -1128,9 +1300,10 @@ function createNPCElement(npc) {
         personalityText = ` | ${npc.personality.charAt(0).toUpperCase() + npc.personality.slice(1)}`;
     }
     
+    const boardHint = npc.type === 'quest_board' ? ' — Mission Board: click to view village quests' : '';
     element.innerHTML = `
         <div class="npc-item-header">${npc.name}${intelligenceIcon}${emotionDisplay}</div>
-        <div class="npc-item-description">${npc.description}${personalityText}${npcInfo}</div>
+        <div class="npc-item-description" title="${npc.description}${boardHint}">${npc.description}${boardHint}${personalityText}${npcInfo}</div>
     `;
     element.addEventListener('click', () => interactWithNPC(npc));
     return element;
@@ -1138,11 +1311,28 @@ function createNPCElement(npc) {
 
 function createEnemyElement(enemy) {
     const element = document.createElement('div');
-    element.className = 'npc-item';
+    element.className = 'npc-item enemy-tooltip';
     element.style.borderColor = '#e94560';
+    
+    const expReward = calculateEnemyExpReward(enemy);
+    const levelDiff = gameState.player.level - getEnemyLevel(enemy);
+    let scalingInfo = '';
+    if (levelDiff > 0) {
+        scalingInfo = `<div style="color: #ff9999; font-size: 0.85em; margin-top: 4px;">⬇️ Weaker foe: -${Math.round((1 - expReward / (GAME_DATA.enemies[enemy.id]?.exp || 50)) * 100)}% EXP</div>`;
+    } else if (levelDiff < 0) {
+        const bonus = Math.round(((expReward / (GAME_DATA.enemies[enemy.id]?.exp || 50)) - 1) * 100);
+        scalingInfo = `<div style="color: #00ff88; font-size: 0.85em; margin-top: 4px;">⬆️ Stronger foe: +${bonus}% EXP BONUS</div>`;
+    }
+    
     element.innerHTML = `
-        <div class="npc-item-header" style="color: #e94560;">⚔️ ${enemy.name}</div>
+        <div class="npc-item-header" style="color: #e94560;">⚔️ ${enemy.name} (Lv ${getEnemyLevel(enemy)})</div>
         <div class="npc-item-description">HP: ${enemy.hp} | Attack: ${enemy.attack}</div>
+        <div class="tooltip-text">
+            <strong>Rewards</strong><br>
+            💰 Gold: ${GAME_DATA.enemies[enemy.id]?.gold || 0}<br>
+            ⭐ EXP: ${expReward}
+            ${scalingInfo}
+        </div>
     `;
     element.addEventListener('click', () => startCombat(enemy));
     return element;
@@ -1300,6 +1490,30 @@ function buyItem(item) {
     }
 }
 
+function acceptQuest(questId, giverId = null) {
+    const quest = GAME_DATA.quests[questId];
+    if (!quest) return false;
+    if (!gameState.player.quests) gameState.player.quests = {};
+    if (gameState.player.quests[questId]) return false;
+
+    gameState.player.quests[questId] = {
+        id: questId,
+        status: quest.type === 'system' ? 'completed' : 'accepted',
+        completed: quest.type === 'system',
+        giver: giverId
+    };
+
+    if (quest.type === 'system') {
+        rewardQuest(questId);
+        addGameLog(`System quest completed: ${quest.title}`, 'success');
+    } else {
+        addGameLog(`Accepted quest: ${quest.title}`, 'success');
+        updateQuestsScreen();
+    }
+
+    return true;
+}
+
 function openQuestBoard() {
     const questBoardList = document.getElementById('quest-board-list');
     questBoardList.innerHTML = '';
@@ -1320,32 +1534,18 @@ function openQuestBoard() {
         }
     });
 
-    // Add event listeners
     questBoardList.querySelectorAll('.accept-quest-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const questId = btn.dataset.quest;
             const quest = GAME_DATA.quests[questId];
             if (quest.type === 'system') {
-                gameState.player.quests[questId] = {
-                    id: questId,
-                    status: 'completed',
-                    completed: true,
-                    giver: null
-                };
-                rewardQuest(questId);
-                addGameLog(`System quest completed: ${quest.title}`, 'success');
+                acceptQuest(questId, null);
                 updateQuestsScreen();
                 openQuestBoard(); // Refresh
             } else {
                 const accept = confirm(`Accept quest: ${quest.title}?`);
                 if (accept) {
-                    gameState.player.quests[questId] = {
-                        id: questId,
-                        status: 'accepted',
-                        completed: false,
-                        giver: null
-                    };
-                    addGameLog(`Accepted quest: ${quest.title}`, 'success');
+                    acceptQuest(questId, null);
                     updateQuestsScreen();
                     openQuestBoard(); // Refresh
                 }
@@ -1413,14 +1613,7 @@ function offerQuestToPlayer(npc) {
     const playerQuest = gameState.player.quests[questId];
     if (!playerQuest) {
         if (quest.type === 'system') {
-            gameState.player.quests[questId] = {
-                id: questId,
-                status: 'completed',
-                completed: true,
-                giver: npc.id || null
-            };
-            rewardQuest(questId);
-            addGameLog(`System quest completed: ${quest.title}`, 'success');
+            acceptQuest(questId, npc.id || null);
             return true;
         }
 
@@ -1430,14 +1623,7 @@ Do you accept the quest \"${quest.title}\"?`);
             return true;
         }
 
-        gameState.player.quests[questId] = {
-            id: questId,
-            status: 'accepted',
-            completed: false,
-            giver: npc.id || null
-        };
-        addGameLog(`Accepted quest: ${quest.title}`, 'success');
-        updateQuestsScreen();
+        acceptQuest(questId, npc.id || null);
         return true;
     }
 
@@ -1499,10 +1685,26 @@ function rewardQuest(questId) {
     if (quest.reward) {
         gameState.player.gold += quest.reward;
     }
+    if (quest.expReward) {
+        gameState.player.gainExp(quest.expReward);
+        addGameLog(`Received ${quest.expReward} quest exp!`, 'success');
+    }
     if (quest.rewardItem) {
         gameState.player.addItem(quest.rewardItem, 1);
         addGameLog(`Received item: ${GAME_DATA.items[quest.rewardItem].name}`, 'success');
     }
+}
+
+function autoCompleteKillQuests() {
+    if (!gameState.player.quests) return;
+    Object.values(gameState.player.quests).forEach(playerQuest => {
+        if (!playerQuest || playerQuest.completed || playerQuest.status !== 'accepted') return;
+        const quest = GAME_DATA.quests[playerQuest.id];
+        if (!quest || !quest.autoCompleteOnKill) return;
+        if (checkQuestCompletion(playerQuest.id)) {
+            completeQuest(playerQuest.id);
+        }
+    });
 }
 
 function checkQuestCompletion(questId) {
@@ -1513,14 +1715,41 @@ function checkQuestCompletion(questId) {
     switch (questId) {
         case 'defeat_shadow_lord':
             return gameState.player.questProgress?.defeat_shadow_lord === true;
+        case 'defeat_troll':
+            return gameState.player.questProgress?.defeat_troll === true;
+        case 'explore_cave':
+            return (gameState.player.questProgress?.explore_cave_kills || 0) >= 4;
+        case 'clear_goblin_camp':
+            return (gameState.player.questProgress?.clear_goblin_camp_kills || 0) >= 5;
         case 'find_ancient_tome':
             return gameState.player.inventory.some(item => item.id === 'ancient_tome');
         case 'deliver_message':
             return gameState.player.currentLocation === 'forest';
         case 'translate_ancient_text':
-            return gameState.player.questProgress?.translate_ancient_text === true;
+            return gameState.player.inventory.some(item => item.id === 'ancient_scroll');
         default:
             return false;
+    }
+}
+
+function updateQuestProgressForEnemyKill(enemyId) {
+    gameState.player.questProgress = gameState.player.questProgress || {};
+    const progress = gameState.player.questProgress;
+
+    if (['goblin', 'goblinWarrior'].includes(enemyId)) {
+        if (gameState.player.quests?.explore_cave?.status === 'accepted') {
+            progress.explore_cave_kills = (progress.explore_cave_kills || 0) + 1;
+            addGameLog(`Quest progress: Cleared ${progress.explore_cave_kills}/4 goblins for Explore the Cave.`, 'info');
+        }
+        if (gameState.player.quests?.clear_goblin_camp?.status === 'accepted') {
+            progress.clear_goblin_camp_kills = (progress.clear_goblin_camp_kills || 0) + 1;
+            addGameLog(`Quest progress: Cleared ${progress.clear_goblin_camp_kills}/5 goblins for Clear the Goblin Camp.`, 'info');
+        }
+    }
+
+    if (enemyId === 'mountain_troll' && gameState.player.quests?.defeat_troll?.status === 'accepted') {
+        progress.defeat_troll = true;
+        addGameLog('Quest progress: Mountain Troll defeated for Slay the Mountain Troll.', 'success');
     }
 }
 
@@ -1530,13 +1759,13 @@ function updateQuestsScreen() {
 
     // Add explanatory text
     const explanation = document.createElement('p');
-    explanation.textContent = 'Talk to the giver first, then return to them for the reward.';
+    explanation.textContent = 'Accepted quests appear below. Ready quests show a complete button you can use once objectives are met.';
     explanation.style.fontSize = '0.9em';
     explanation.style.color = '#888';
     explanation.style.marginBottom = '10px';
     questsList.appendChild(explanation);
 
-    const acceptedQuests = Object.values(gameState.player.quests || {}).filter(q => q.status === 'accepted');
+    const acceptedQuests = Object.values(gameState.player.quests || {}).filter(q => q.status === 'accepted' && !q.completed);
     const completedQuests = Object.values(gameState.player.quests || {}).filter(q => q.completed);
 
     if (acceptedQuests.length === 0) {
@@ -1549,12 +1778,24 @@ function updateQuestsScreen() {
             const questItem = document.createElement('div');
             questItem.className = 'quest-item';
             const systemIndicator = quest.type === 'system' ? ' (System Quest)' : '';
+            const readyToComplete = checkQuestCompletion(quest.id);
+            const completionText = readyToComplete ? 'Ready to complete!' : 'In progress...';
             questItem.innerHTML = `
                 <div class="quest-title">${quest.title}${systemIndicator}</div>
                 <div class="quest-description">${quest.description}</div>
                 <div class="quest-status">Status: Accepted</div>
+                <div class="quest-progress">${completionText}</div>
                 <div class="quest-reward">Reward: ${quest.reward} gold</div>
             `;
+            if (readyToComplete) {
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'btn btn-primary';
+                completeBtn.textContent = 'Complete Quest';
+                completeBtn.addEventListener('click', () => {
+                    completeQuest(quest.id, null);
+                });
+                questItem.appendChild(completeBtn);
+            }
             questsList.appendChild(questItem);
         });
     }
@@ -1587,7 +1828,7 @@ function startCombat(enemy) {
 
     document.getElementById('location-view').classList.add('hidden');
     document.getElementById('combat-view').classList.remove('hidden');
-    document.getElementById('enemy-name').textContent = enemy.name;
+    document.getElementById('enemy-name').textContent = `${enemy.name} (Lv ${getEnemyLevel(enemy)})`;
 
     addGameLog(`Combat started with ${enemy.name}!`);
     updateCombatUI();
@@ -1597,27 +1838,58 @@ function updateCombatUI() {
     const enemy = gameState.player.currentEnemy;
     const player = gameState.player;
 
-    // Update health bars
     const playerHealthPercent = Math.max(0, Math.min(100, (player.hp / player.maxHP) * 100));
+    document.getElementById('player-health-bar').style.width = playerHealthPercent + '%';
+    document.getElementById('player-health-text').textContent = `${player.hp}/${player.maxHP}`;
+
+    if (!enemy) {
+        document.getElementById('enemy-health-bar').style.width = '0%';
+        document.getElementById('enemy-health-text').textContent = `0/0`;
+        return;
+    }
+
     const enemyMaxHP = GAME_DATA.enemies[enemy.id]?.hp || enemy.hp || 1;
     const enemyHealthPercent = Math.max(0, Math.min(100, (enemy.hp / enemyMaxHP) * 100));
 
-    document.getElementById('player-health-bar').style.width = playerHealthPercent + '%';
     document.getElementById('enemy-health-bar').style.width = enemyHealthPercent + '%';
+    document.getElementById('enemy-health-text').textContent = `${enemy.hp}/${enemyMaxHP}`;
+}
 
-    document.getElementById('player-health-text').textContent = `${player.hp}/${player.maxHP}`;
-    document.getElementById('enemy-health-text').textContent = `${enemy.hp}/${GAME_DATA.enemies[enemy.id].hp}`;
+function calculateDamage(attackPower, defenseValue, variance = 0.25) {
+    const varianceAmount = Math.floor(attackPower * variance * Math.random());
+    const baseDamage = attackPower + varianceAmount;
+    return Math.max(1, Math.floor(baseDamage - Math.floor(defenseValue * 0.6)));
+}
+
+function getEnemyLevel(enemy) {
+    if (!enemy) return 1;
+    if (enemy.level) return enemy.level;
+    const dataEnemy = GAME_DATA.enemies[enemy.id];
+    return (dataEnemy && dataEnemy.level) ? dataEnemy.level : 1;
+}
+
+function calculateEnemyExpReward(enemy) {
+    const baseExp = (enemy && GAME_DATA.enemies[enemy.id]?.exp) || (enemy?.exp || 0);
+    const enemyLevel = getEnemyLevel(enemy);
+    const playerLevel = gameState.player.level;
+    const levelDiff = playerLevel - enemyLevel;
+    const ratio = levelDiff <= 0
+        ? Math.min(1.5, 1 + Math.abs(levelDiff) * 0.08)
+        : Math.max(0.15, 1 - levelDiff * 0.12);
+    return Math.max(1, Math.floor(baseExp * ratio));
 }
 
 function combatAttack() {
     playClickSound();
-    const damage = Math.floor(gameState.player.attack + Math.random() * 5);
-    gameState.player.currentEnemy.hp = Math.max(0, gameState.player.currentEnemy.hp - damage);
+    const player = gameState.player;
+    const enemy = gameState.player.currentEnemy;
+    const damage = calculateDamage(player.getAttackPower(), enemy.defense);
+    enemy.hp = Math.max(0, enemy.hp - damage);
 
-    addGameLog(`You attacked for ${damage} damage!`, 'player');
+    addGameLog(`You strike ${enemy.name} for ${damage} damage!`, 'player');
     updateCombatUI();
 
-    if (gameState.player.currentEnemy.hp <= 0) {
+    if (enemy.hp <= 0) {
         endCombat(true);
         return;
     }
@@ -1631,15 +1903,18 @@ function combatCastSpell() {
         return;
     }
 
-    gameState.player.mp -= 15;
-    gameState.player.spellsCast++;
-    const damage = Math.floor(gameState.player.attack * 1.5 + Math.random() * 10);
-    gameState.player.currentEnemy.hp = Math.max(0, gameState.player.currentEnemy.hp - damage);
+    const player = gameState.player;
+    const enemy = gameState.player.currentEnemy;
+    player.mp -= 15;
+    player.spellsCast++;
+    const spellPower = Math.floor(player.getAttackPower() * 1.7);
+    const damage = calculateDamage(spellPower, enemy.defense, 0.35);
+    enemy.hp = Math.max(0, enemy.hp - damage);
 
-    addGameLog(`You cast a spell dealing ${damage} damage!`, 'player');
+    addGameLog(`You cast a spell and deal ${damage} damage!`, 'player');
     updateCombatUI();
 
-    if (gameState.player.currentEnemy.hp <= 0) {
+    if (enemy.hp <= 0) {
         endCombat(true);
         return;
     }
@@ -1648,25 +1923,26 @@ function combatCastSpell() {
 }
 
 function combatDefend() {
-    const reduction = 5;
-    addGameLog(`You take a defensive stance, reducing damage by ${reduction}!`, 'player');
+    const reduction = Math.floor(gameState.player.getDefensePower() * 0.25) + 2;
+    addGameLog(`You brace yourself, reducing incoming damage by ${reduction}.`, 'player');
     enemyTurn(reduction);
 }
 
 function combatFlee() {
-    const fleeChance = 0.4;
+    const fleeChance = 0.35 + Math.min(gameState.player.speed * 0.01, 0.25);
     if (Math.random() < fleeChance) {
         addGameLog(`You successfully fled from combat!`);
         endCombat(false);
     } else {
-        addGameLog(`Failed to flee!`);
+        addGameLog(`Failed to flee!`, 'enemy');
         enemyTurn();
     }
 }
 
 function enemyTurn(defenseBonus = 0) {
     const enemy = gameState.player.currentEnemy;
-    const damage = Math.floor(enemy.attack + Math.random() * 3) - defenseBonus;
+    const baseDamage = enemy.attack + Math.floor(Math.random() * 4);
+    const damage = Math.max(1, baseDamage - defenseBonus);
     const actualDamage = gameState.player.takeDamage(damage);
 
     addGameLog(`${enemy.name} attacks for ${actualDamage} damage!`, 'enemy');
@@ -1682,32 +1958,38 @@ function enemyTurn(defenseBonus = 0) {
 function endCombat(victory) {
     gameState.player.inCombat = false;
     const enemy = gameState.player.currentEnemy;
+    const enemyData = (enemy && GAME_DATA.enemies && GAME_DATA.enemies[enemy.id]) ? GAME_DATA.enemies[enemy.id] : { exp: 0, gold: 0, drops: [] };
 
     if (victory) {
-        const rewards = GAME_DATA.enemies[enemy.id];
-        gameState.player.gainExp(rewards.exp);
-        gameState.player.gold += rewards.gold;
-        gameState.player.enemiesKilled++;
-
-        addGameLog(`Victory! You gained ${rewards.exp} exp and ${rewards.gold} gold!`, 'success');
-
-        // Random item drop
-        if (rewards.drops && rewards.drops.length > 0) {
-            const droppedItem = rewards.drops[Math.floor(Math.random() * rewards.drops.length)];
-            gameState.player.addItem(droppedItem);
-            addGameLog(`You found: ${GAME_DATA.items[droppedItem].name}`);
-            gameState.player.treasuresFound++;
+        if (enemy && enemy.id) {
+            updateQuestProgressForEnemyKill(enemy.id);
+            autoCompleteKillQuests();
         }
 
-        // Achievement checks
+        const expReward = calculateEnemyExpReward(enemy);
+        const goldReward = enemyData.gold || 0;
+        const droppedItemId = (enemyData.drops && enemyData.drops.length > 0) ? enemyData.drops[Math.floor(Math.random() * enemyData.drops.length)] : null;
+
+        gameState.pendingCombatRewards = {
+            enemyName: enemy?.name || 'Enemy',
+            enemyId: enemy?.id || null,
+            exp: expReward,
+            gold: goldReward,
+            droppedItemId: droppedItemId,
+            droppedItemName: droppedItemId ? GAME_DATA.items[droppedItemId]?.name : null
+        };
+
+        gameState.player.enemiesKilled++;
+
+        addGameLog(`Victory! ${enemy?.name || 'The foe'} has been defeated. Claim your rewards from the reward panel.`, 'success');
+
         if (gameState.player.enemiesKilled === 1) unlockAchievement('firstBlood');
-        if (enemy.name.toLowerCase().includes('dragon')) unlockAchievement('dragonSlayer');
-        if (enemy.name === 'Shadow Lord') unlockAchievement('shadowLordVictory');
-        
+        if (enemy && enemy.name && enemy.name.toLowerCase().includes('dragon')) unlockAchievement('dragonSlayer');
+        if (enemy && enemy.name === 'Shadow Lord') unlockAchievement('shadowLordVictory');
+
         gameState.player.checkHiddenClassUnlock();
 
-        // Check quest completion
-        if (enemy.name === 'Shadow Lord') {
+        if (enemy && enemy.id === 'shadow_lord') {
             gameState.player.questProgress = gameState.player.questProgress || {};
             gameState.player.questProgress.defeat_shadow_lord = true;
             addGameLog('You have defeated the Shadow Lord. Return to Brother Isaiah to claim your reward.', 'success');
@@ -1721,6 +2003,8 @@ function endCombat(victory) {
     document.getElementById('location-view').classList.remove('hidden');
     updateCombatUI();
     updateUI();
+    showCombatVictoryModal();
+    gameState.player.currentEnemy = null;
 }
 
 function addGameLog(message, type = 'neutral') {
@@ -2117,7 +2401,7 @@ function loadGame(savedData = null) {
         // Advance time based on real time elapsed
         if (save.lastSaveTime) {
             const elapsedMs = Date.now() - save.lastSaveTime;
-            const elapsedHours = Math.min(Math.floor(elapsedMs / 5000), 24); // Cap at 24 hours to prevent huge jumps
+            const elapsedHours = Math.min(Math.floor(elapsedMs / 1800000), 24); // 1 hour per 1800 seconds (2 game hours = 1 real hour)
             worldTime.advance(elapsedHours);
         }
     }
@@ -2702,76 +2986,154 @@ function leaveGuild() {
 }
 
 // ============ CRAFTING SYSTEM ============
+function getIngredientAmount(itemId) {
+    if (itemId === 'gold') return gameState.player.gold;
+    return gameState.player.inventory.find(i => i.id === itemId)?.quantity || 0;
+}
+
+function playerHasIngredient(itemId, quantity) {
+    if (itemId === 'gold') return gameState.player.gold >= quantity;
+    return getIngredientAmount(itemId) >= quantity;
+}
+
+function canCraftRecipe(recipe) {
+    return gameState.player.level >= recipe.level &&
+           Object.entries(recipe.ingredients).every(([itemId, amount]) => playerHasIngredient(itemId, amount));
+}
+
 function updateCraftingScreen() {
     if (!gameState.player.crafting) {
-        gameState.player.crafting = { recipes: [] };
+        gameState.player.crafting = { selectedRecipeId: null, sortByAvailable: false };
+    }
+
+    if (typeof gameState.player.crafting.sortByAvailable !== 'boolean') {
+        gameState.player.crafting.sortByAvailable = false;
     }
 
     const recipesList = document.getElementById('recipes-list');
-    recipesList.innerHTML = '<h3>Recipes</h3>';
-    
-    Object.keys(GAME_DATA.recipes).forEach(recipeId => {
-        const recipe = GAME_DATA.recipes[recipeId];
+    recipesList.innerHTML = '';
+
+    if (!Array.isArray(GAME_DATA.recipes) || GAME_DATA.recipes.length === 0) {
+        recipesList.innerHTML = '<p>No crafting recipes are available yet.</p>';
+        return;
+    }
+
+    if (!gameState.player.crafting.selectedRecipeId) {
+        gameState.player.crafting.selectedRecipeId = GAME_DATA.recipes[0].id;
+    }
+
+    const recipes = [...GAME_DATA.recipes];
+    if (gameState.player.crafting.sortByAvailable) {
+        recipes.sort((a, b) => {
+            const aReady = canCraftRecipe(a) ? 0 : 1;
+            const bReady = canCraftRecipe(b) ? 0 : 1;
+            if (aReady !== bReady) return aReady - bReady;
+            if (a.level !== b.level) return a.level - b.level;
+            return a.name.localeCompare(b.name);
+        });
+    } else {
+        recipes.sort((a, b) => {
+            if (a.level !== b.level) return a.level - b.level;
+            return a.name.localeCompare(b.name);
+        });
+    }
+
+    recipes.forEach(recipe => {
         const recipeItem = document.createElement('div');
-        recipeItem.className = 'recipe-item';
+        const available = canCraftRecipe(recipe);
+        const selected = gameState.player.crafting.selectedRecipeId === recipe.id;
+        recipeItem.dataset.recipeId = recipe.id;
+        recipeItem.className = `recipe-item ${available ? 'craftable' : 'locked'}${selected ? ' selected' : ''}`;
         recipeItem.innerHTML = `
+            <div class="recipe-badge ${available ? 'ready-now' : ''}">${available ? '✓ Ready Now' : '⌛'}</div>
             <div class="recipe-name">${recipe.name}</div>
-            <div class="recipe-requirement">Level ${recipe.requiredLevel}</div>
+            <div class="recipe-requirement">Requires level ${recipe.level}</div>
+            <div class="recipe-status">${available ? 'Ready' : 'Missing ingredients'}</div>
         `;
-        recipeItem.addEventListener('click', () => displayRecipeDetails(recipeId));
+        recipeItem.addEventListener('click', () => displayRecipeDetails(recipe.id));
         recipesList.appendChild(recipeItem);
     });
+
+    const sortToggle = document.getElementById('sort-available-toggle');
+    if (sortToggle) {
+        sortToggle.checked = gameState.player.crafting.sortByAvailable;
+    }
+
+    displayRecipeDetails(gameState.player.crafting.selectedRecipeId);
 }
 
 function displayRecipeDetails(recipeId) {
-    const recipe = GAME_DATA.recipes[recipeId];
+    const recipe = GAME_DATA.recipes.find(r => r.id === recipeId);
+    if (!recipe) return;
+
+    gameState.player.crafting.selectedRecipeId = recipeId;
     const craftingInfo = document.getElementById('craft-details');
-    
-    const canCraft = gameState.player.level >= recipe.requiredLevel && 
-                     recipe.ingredients.every(ing => {
-                         const item = gameState.player.inventory.find(i => i.id === ing.itemId);
-                         return item && item.quantity >= ing.quantity;
-                     });
-    
-    let ingredientsHtml = '<strong>Ingredients:</strong><br>';
-    recipe.ingredients.forEach(ing => {
-        const item = GAME_DATA.items[ing.itemId];
-        const playerHas = gameState.player.inventory.find(i => i.id === ing.itemId)?.quantity || 0;
-        const color = playerHas >= ing.quantity ? '#00ff00' : '#ff0000';
-        ingredientsHtml += `<div style="color: ${color};">• ${item.name} (${playerHas}/${ing.quantity})</div>`;
+    const item = GAME_DATA.items[recipe.output] || { name: recipe.output };
+    const canCraft = canCraftRecipe(recipe);
+
+    let ingredientsHtml = '<div class="crafting-ingredients"><strong>Ingredients</strong>';
+    Object.entries(recipe.ingredients).forEach(([itemId, amount]) => {
+        const ingredientName = itemId === 'gold' ? 'Gold' : (GAME_DATA.items[itemId]?.name || itemId);
+        const playerHas = getIngredientAmount(itemId);
+        const color = playerHas >= amount ? '#00ff00' : '#ff5c5c';
+        ingredientsHtml += `<div class="ingredient-row" style="color: ${color};">• ${ingredientName}: ${playerHas}/${amount}</div>`;
     });
+    ingredientsHtml += '</div>';
+
+    const itemDetails = [];
+    if (item.type) itemDetails.push(`<span>Type: ${item.type}</span>`);
+    if (item.attack) itemDetails.push(`<span>Attack: +${item.attack}</span>`);
+    if (item.defense) itemDetails.push(`<span>Defense: +${item.defense}</span>`);
+    if (item.mp) itemDetails.push(`<span>MP: +${item.mp}</span>`);
+    if (item.effect) itemDetails.push(`<span>Effect: ${item.effect}</span>`);
+    if (item.value) itemDetails.push(`<span>Value: ${item.value}</span>`);
 
     craftingInfo.innerHTML = `
-        <h3>${recipe.name}</h3>
-        <div class="recipe-requirement">Level ${recipe.requiredLevel}</div>
-        <div style="margin: 10px 0;">${ingredientsHtml}</div>
-        <strong>Creates:</strong> ${GAME_DATA.items[recipe.createsItem].name}
+        <div class="crafting-header">
+            <h3>${recipe.name}</h3>
+            <div class="crafting-subtitle">Creates: ${item.name}</div>
+        </div>
+        <div class="recipe-requirement">Requires Level ${recipe.level}</div>
+        ${itemDetails.length ? `<div class="crafted-item-details">${itemDetails.join(' · ')}</div>` : ''}
+        ${ingredientsHtml}
+        <div class="crafting-status ${canCraft ? 'ready' : 'blocked'}">
+            ${canCraft ? 'You can craft this item now.' : 'You are missing resources or level requirements.'}
+        </div>
+        <div class="crafting-tracker">Items crafted: ${gameState.player.itemsCrafted}</div>
     `;
-    
+
     const craftBtn = document.getElementById('craft-btn');
     craftBtn.disabled = !canCraft;
-    if (canCraft) {
-        craftBtn.replaceWith(craftBtn.cloneNode(true));
-        document.getElementById('craft-btn').addEventListener('click', () => craftItem(recipeId));
-    }
+    craftBtn.dataset.recipeId = recipeId;
+    craftBtn.textContent = canCraft ? `Craft ${item.name}` : 'Cannot Craft';
+
+    const recipeItems = document.querySelectorAll('.recipe-item');
+    recipeItems.forEach(node => {
+        node.classList.toggle('selected', node.dataset.recipeId === recipeId);
+    });
 }
 
 function craftItem(recipeId) {
-    const recipe = GAME_DATA.recipes[recipeId];
-    
-    // Consume ingredients
-    recipe.ingredients.forEach(ing => {
-        gameState.player.removeItem(ing.itemId, ing.quantity);
+    const recipe = GAME_DATA.recipes.find(r => r.id === recipeId);
+    if (!recipe || !canCraftRecipe(recipe)) {
+        addGameLog('Unable to craft item. Check your level and ingredients.', 'error');
+        return;
+    }
+
+    Object.entries(recipe.ingredients).forEach(([itemId, amount]) => {
+        if (itemId === 'gold') {
+            gameState.player.gold -= amount;
+        } else {
+            gameState.player.removeItem(itemId, amount);
+        }
     });
-    
-    // Create item
-    gameState.player.addItem(recipe.createsItem, recipe.quantity);
+
+    const outputQuantity = recipe.quantity || 1;
+    gameState.player.addItem(recipe.output, outputQuantity);
     gameState.player.itemsCrafted++;
-    addGameLog(`You crafted ${recipe.quantity}x ${GAME_DATA.items[recipe.createsItem].name}!`, 'success');
-    
-    // Check crafting achievement
+    addGameLog(`You crafted ${outputQuantity}x ${GAME_DATA.items[recipe.output]?.name || recipe.output}!`, 'success');
+
     if (gameState.player.itemsCrafted >= 10) unlockAchievement('masterCrafter');
-    
     updateCraftingScreen();
 }
 

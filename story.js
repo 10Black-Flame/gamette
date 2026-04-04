@@ -6,18 +6,38 @@ class Player {
         this.classType = classType;
         const classData = GAME_DATA.classes[classType];
         
-        this.maxHP = classData.baseHP;
-        this.hp = this.maxHP;
-        this.maxMP = classData.baseMP;
-        this.mp = this.maxMP;
-        this.attack = classData.baseAttack;
-        this.defense = classData.baseDefense;
-        this.speed = classData.baseSpeed;
-        
         this.level = 1;
         this.exp = 0;
         this.expToLevel = 500;
         this.gold = 100;
+        
+        // ============ PRIMARY STATS ============
+        // Strength: determines min/max damage
+        this.strength = classData.baseStrength || 10;
+        // Stamina: determines HP and Defense
+        this.stamina = classData.baseStamina || 10;
+        // Intelligence: determines MP and Magical Damage
+        this.intelligence = classData.baseIntelligence || 10;
+        // Speed: determines Attack Speed and Movement Speed
+        this.speed = classData.baseSpeed || 10;
+        // Agility: determines Dodge Chance and Evasion
+        this.agility = classData.baseAgility || 10;
+        // Luck: determines Crit Chance and Rare Drop Rates
+        this.luck = classData.baseLuck || 10;
+        // Vitality: determines HP Regen (can be same as stamina or separate)
+        this.vitality = classData.baseVitality || 8;
+        // Wisdom: determines spell effectiveness and mana regen
+        this.wisdom = classData.baseWisdom || 8;
+        
+        // ============ DERIVED STATS ============
+        this.maxHP = Math.floor(100 + this.stamina * 8 + this.vitality * 4);
+        this.hp = this.maxHP;
+        this.maxMP = Math.floor(50 + this.intelligence * 6 + this.wisdom * 3);
+        this.mp = this.maxMP;
+        
+        // Legacy stats for compatibility
+        this.attack = classData.baseAttack || Math.floor(10 + this.strength * 1.2);
+        this.defense = classData.baseDefense || Math.floor(5 + this.stamina * 0.8 + this.agility * 0.3);
         
         this.inventory = [];
         this.equipment = {};
@@ -78,12 +98,23 @@ class Player {
         this.expToLevel = Math.max(200, Math.floor(this.expToLevel * 1.12 + this.level * 8));
         this.skillPoints += 1;
         
-        this.maxHP += 10 + Math.floor(this.level / 5);
+        // Stat increases per level (can be customized per class)
+        this.strength += 1;
+        this.stamina += 1;
+        this.intelligence += 0.8;
+        this.speed += 0.7;
+        this.agility += 0.8;
+        this.luck += 0.4;
+        this.vitality += 0.6;
+        this.wisdom += 0.7;
+        
+        // Recalculate derived stats
+        this.maxHP = Math.floor(100 + this.stamina * 8 + this.vitality * 4);
         this.hp = this.maxHP;
-        this.maxMP += 5;
+        this.maxMP = Math.floor(50 + this.intelligence * 6 + this.wisdom * 3);
         this.mp = this.maxMP;
-        this.attack += 2;
-        this.defense += 1;
+        this.attack = Math.floor(10 + this.strength * 1.2);
+        this.defense = Math.floor(5 + this.stamina * 0.8 + this.agility * 0.3);
         
         addGameLog(`Level Up! You are now level ${this.level}!`, 'success');
         playLevelUpSound();
@@ -111,24 +142,101 @@ class Player {
         this.mp = Math.min(this.mp + amount, this.maxMP);
     }
 
-    getEquipmentBonus(stat) {
+    // Get stat bonuses from equipped items
+    getStatBonus(stat) {
         let bonus = 0;
         if (!this.equipment) return bonus;
         Object.values(this.equipment).forEach(itemId => {
             const item = GAME_DATA.items[itemId];
             if (!item) return;
-            if (stat === 'attack' && item.attack) bonus += item.attack;
-            if (stat === 'defense' && item.defense) bonus += item.defense;
+            if (item.stats && item.stats[stat]) bonus += item.stats[stat];
         });
         return bonus;
     }
 
-    getAttackPower() {
-        return this.attack + this.getEquipmentBonus('attack');
+    getEquipmentBonus(stat) {
+        return this.getStatBonus(stat);
     }
 
+    // Get final stats with equipment
+    getFinalStat(baseStat, statName) {
+        return baseStat + this.getStatBonus(statName);
+    }
+
+    // Damage calculation based on Strength
+    getMinDamage() {
+        const baseMin = Math.floor(5 + this.getFinalStat(this.strength, 'strength') * 0.8);
+        const equipBonus = this.getStatBonus('attack') || 0;
+        return Math.floor(baseMin + equipBonus * 0.5);
+    }
+
+    getMaxDamage() {
+        const baseMax = Math.floor(12 + this.getFinalStat(this.strength, 'strength') * 1.5);
+        const equipBonus = this.getStatBonus('attack') || 0;
+        return Math.floor(baseMax + equipBonus * 0.8);
+    }
+
+    // Attack speed based on Speed stat
+    getAttackSpeed() {
+        const finalSpeed = this.getFinalStat(this.speed, 'speed');
+        return Math.max(0.5, 1 + (finalSpeed - 10) * 0.05); // 1.0 baseline at 10 speed
+    }
+
+    // Crit chance based on Agility and Luck
+    getCritChance() {
+        const finalAgility = this.getFinalStat(this.agility, 'agility');
+        const finalLuck = this.getFinalStat(this.luck, 'luck');
+        return Math.min(0.50, 0.05 + (finalAgility - 10) * 0.015 + (finalLuck - 10) * 0.010);
+    }
+
+    // Crit damage multiplier
+    getCritDamage() {
+        return 1.5 + this.getFinalStat(this.strength, 'strength') * 0.01; // +1.5x to 2x+ at high str
+    }
+
+    // Dodge chance based on Agility and Luck
+    getDodgeChance() {
+        const finalAgility = this.getFinalStat(this.agility, 'agility');
+        const finalLuck = this.getFinalStat(this.luck, 'luck');
+        return Math.min(0.40, 0.02 + (finalAgility - 10) * 0.02 + (finalLuck - 10) * 0.008);
+    }
+
+    // Defense based on Stamina and Agility
     getDefensePower() {
-        return this.defense + this.getEquipmentBonus('defense');
+        const baseDefense = Math.floor(5 + this.getFinalStat(this.stamina, 'stamina') * 0.8 + this.getFinalStat(this.agility, 'agility') * 0.3);
+        return baseDefense + (this.getStatBonus('defense') || 0);
+    }
+
+    // Magical damage based on Intelligence and Wisdom
+    getMagicalDamage() {
+        const finalIntel = this.getFinalStat(this.intelligence, 'intelligence');
+        const finalWisdom = this.getFinalStat(this.wisdom, 'wisdom');
+        return Math.floor(8 + finalIntel * 1.2 + finalWisdom * 0.6);
+    }
+
+    // MP regen based on Wisdom and Intelligence
+    getMPRegenRate() {
+        const finalWisdom = this.getFinalStat(this.wisdom, 'wisdom');
+        const finalIntel = this.getFinalStat(this.intelligence, 'intelligence');
+        return Math.max(1, Math.floor(1 + (finalWisdom - 10) * 0.15 + (finalIntel - 10) * 0.1));
+    }
+
+    // HP regen based on Vitality and Stamina
+    getHPRegenRate() {
+        const finalVitality = this.getFinalStat(this.vitality, 'vitality');
+        const finalStamina = this.getFinalStat(this.stamina, 'stamina');
+        return Math.max(0.5, Math.floor(2 + (finalVitality - 8) * 0.2 + (finalStamina - 10) * 0.1));
+    }
+
+    // Luck affects rare drop rates
+    getRareDropBonus() {
+        const finalLuck = this.getFinalStat(this.luck, 'luck');
+        return 1 + Math.max(0, (finalLuck - 10) * 0.02); // +2% per luck above 10
+    }
+
+    // Legacy method for compatibility
+    getAttackPower() {
+        return this.attack + (this.getStatBonus('attack') || 0);
     }
 
     takeDamage(damage) {
@@ -1009,6 +1117,11 @@ function setupMainGameControls() {
     document.getElementById('logout-btn').addEventListener('click', logout);
 
     // Close Buttons
+    document.getElementById('stats-btn').addEventListener('click', () => {
+        updateStatsScreen();
+        showScreen('stats');
+    });
+    document.getElementById('close-stats-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-inventory-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-quests-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-quest-board-btn').addEventListener('click', () => showScreen('mainGame'));
@@ -2106,10 +2219,24 @@ function updateCombatUI() {
     document.getElementById('enemy-health-text').textContent = `${enemy.hp}/${enemyMaxHP}`;
 }
 
-function calculateDamage(attackPower, defenseValue, variance = 0.25) {
-    const varianceAmount = Math.floor(attackPower * variance * Math.random());
-    const baseDamage = attackPower + varianceAmount;
-    return Math.max(1, Math.floor(baseDamage - Math.floor(defenseValue * 0.6)));
+function calculateDamage(player, defenseValue, enemy = null) {
+    // Get base damage range from player stats
+    const minDamage = player.getMinDamage();
+    const maxDamage = player.getMaxDamage();
+    
+    // Roll damage within range
+    let damage = Math.floor(minDamage + Math.random() * (maxDamage - minDamage));
+    
+    // Check for critical hit
+    const isCrit = Math.random() < player.getCritChance();
+    if (isCrit) {
+        damage = Math.floor(damage * player.getCritDamage());
+    }
+    
+    // Apply defense reduction
+    const actualDamage = Math.max(1, Math.floor(damage - defenseValue * 0.5));
+    
+    return { damage: actualDamage, isCrit: isCrit, min: minDamage, max: maxDamage };
 }
 
 function getEnemyLevel(enemy) {
@@ -2134,10 +2261,28 @@ function combatAttack() {
     playClickSound();
     const player = gameState.player;
     const enemy = gameState.player.currentEnemy;
-    const damage = calculateDamage(player.getAttackPower(), enemy.defense);
-    enemy.hp = Math.max(0, enemy.hp - damage);
+    
+    // Enemy dodge chance (simplistic)
+    const enemyDodgeChance = Math.min(0.2, (enemy.level || 1) * 0.02);
+    if (Math.random() < enemyDodgeChance) {
+        addGameLog(`${enemy.name} dodged your attack!`, 'enemy');
+        updateCombatUI();
+        enemyTurn();
+        return;
+    }
+    
+    const damageResult = calculateDamage(player, enemy.defense || 0, enemy);
+    enemy.hp = Math.max(0, enemy.hp - damageResult.damage);
 
-    addGameLog(`You strike ${enemy.name} for ${damage} damage!`, 'player');
+    let message = `You strike ${enemy.name} for ${damageResult.damage} damage!`;
+    if (damageResult.isCrit) {
+        message += ` 💥 CRITICAL HIT!`;
+        addGameLog(message, 'player');
+        playSuccessSound();
+    } else {
+        addGameLog(message, 'player');
+    }
+    
     updateCombatUI();
 
     if (enemy.hp <= 0) {
@@ -2192,13 +2337,28 @@ function combatFlee() {
 
 function enemyTurn(defenseBonus = 0) {
     const enemy = gameState.player.currentEnemy;
-    const baseDamage = enemy.attack + Math.floor(Math.random() * 4);
-    const damage = Math.max(1, baseDamage - defenseBonus);
-    const actualDamage = gameState.player.takeDamage(damage);
+    const player = gameState.player;
+    
+    // Check if player dodges
+    if (Math.random() < player.getDodgeChance()) {
+        addGameLog(`You dodged ${enemy.name}'s attack!`, 'success');
+        updateCombatUI();
+        return;
+    }
+    
+    // Enemy damage calculation (simplified, no crit)
+    const enemyMinDamage = Math.floor(enemy.attack * 0.7);
+    const enemyMaxDamage = Math.floor(enemy.attack * 1.2);
+    const baseDamage = enemyMinDamage + Math.floor(Math.random() * (enemyMaxDamage - enemyMinDamage));
+    const playerDefense = player.getDefensePower();
+    const actualDamage = Math.max(1, Math.floor(baseDamage - playerDefense * 0.5));
+    
+    player.hp -= actualDamage;
+    player.damageTakenInCombat += actualDamage;
 
     addGameLog(`${enemy.name} attacks for ${actualDamage} damage!`, 'enemy');
 
-    if (gameState.player.hp <= 0) {
+    if (player.hp <= 0) {
         endCombat(false);
         return;
     }
@@ -2355,6 +2515,59 @@ function updateInventoryScreen() {
     if (gameState.player.inventory.length === 0) {
         inventoryList.innerHTML = '<p>Inventory is empty</p>';
     }
+}
+
+function updateStatsScreen() {
+    const player = gameState.player;
+    
+    // Primary stats with bonuses
+    const stats = [
+        { id: 'strength', value: player.strength },
+        { id: 'stamina', value: player.stamina },
+        { id: 'intelligence', value: player.intelligence },
+        { id: 'speed', value: player.speed },
+        { id: 'agility', value: player.agility },
+        { id: 'luck', value: player.luck },
+        { id: 'vitality', value: player.vitality },
+        { id: 'wisdom', value: player.wisdom }
+    ];
+    
+    stats.forEach(stat => {
+        const bonus = player.getStatBonus(stat.id);
+        document.getElementById(`stat-${stat.id}`).textContent = Math.floor(stat.value);
+        const bonusElement = document.getElementById(`stat-${stat.id}-bonus`);
+        if (bonusElement) {
+            bonusElement.textContent = bonus > 0 ? `+${bonus}` : '';
+            bonusElement.style.color = bonus > 0 ? '#ffd700' : '#888';
+        }
+    });
+    
+    // HP and Mana
+    document.getElementById('stat-hp').textContent = `${player.hp}/${player.maxHP}`;
+    document.getElementById('stat-mp').textContent = `${player.mp}/${player.maxMP}`;
+    
+    // Damage range
+    const minDmg = player.getMinDamage();
+    const maxDmg = player.getMaxDamage();
+    document.getElementById('stat-damage').textContent = `${minDmg} - ${maxDmg}`;
+    
+    // Defense
+    document.getElementById('stat-defense').textContent = Math.floor(player.getDefensePower());
+    
+    // Crit chance
+    const critChance = (player.getCritChance() * 100).toFixed(1);
+    document.getElementById('stat-crit-chance').textContent = `${critChance}%`;
+    
+    // Attack speed
+    const atkSpeed = player.getAttackSpeed().toFixed(2);
+    document.getElementById('stat-attack-speed').textContent = `${atkSpeed}x`;
+    
+    // Dodge chance
+    const dodgeChance = (player.getDodgeChance() * 100).toFixed(1);
+    document.getElementById('stat-dodge-chance').textContent = `${dodgeChance}%`;
+    
+    // Magic damage
+    document.getElementById('stat-magic-damage').textContent = Math.floor(player.getMagicalDamage());
 }
 
 function readBook(bookId) {

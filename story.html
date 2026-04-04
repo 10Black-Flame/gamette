@@ -156,6 +156,7 @@
                 </div>
                 <div class="game-menu">
                     <button class="btn-small" id="inventory-btn">Inventory</button>
+                    <button class="btn-small" id="stats-btn">⚡ Stats</button>
                     <button class="btn-small" id="quests-btn">Quests</button>
                     <button class="btn-small" id="guild-btn">Guild</button>
                     <button class="btn-small" id="crafting-btn">Craft</button>
@@ -254,6 +255,102 @@
                         <button class="btn btn-secondary" id="dismiss-reward-btn">Dismiss</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Screen: Character Stats -->
+        <div id="stats-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>⚔️ Character Stats</h2>
+                <div class="stats-grid">
+                    <!-- Primary Stats -->
+                    <div class="stats-section">
+                        <h3>Primary Stats</h3>
+                        <div class="stat-row">
+                            <span class="stat-label">💪 Strength</span>
+                            <span class="stat-value" id="stat-strength"></span>
+                            <span class="stat-bonus" id="stat-strength-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">❤️‍🔥 Stamina</span>
+                            <span class="stat-value" id="stat-stamina"></span>
+                            <span class="stat-bonus" id="stat-stamina-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">🧠 Intelligence</span>
+                            <span class="stat-value" id="stat-intelligence"></span>
+                            <span class="stat-bonus" id="stat-intelligence-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">⚡ Speed</span>
+                            <span class="stat-value" id="stat-speed"></span>
+                            <span class="stat-bonus" id="stat-speed-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">🎯 Agility</span>
+                            <span class="stat-value" id="stat-agility"></span>
+                            <span class="stat-bonus" id="stat-agility-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">🍀 Luck</span>
+                            <span class="stat-value" id="stat-luck"></span>
+                            <span class="stat-bonus" id="stat-luck-bonus"></span>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Stats -->
+                    <div class="stats-section">
+                        <h3>Secondary Stats</h3>
+                        <div class="stat-row">
+                            <span class="stat-label">💚 Vitality</span>
+                            <span class="stat-value" id="stat-vitality"></span>
+                            <span class="stat-bonus" id="stat-vitality-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">📚 Wisdom</span>
+                            <span class="stat-value" id="stat-wisdom"></span>
+                            <span class="stat-bonus" id="stat-wisdom-bonus"></span>
+                        </div>
+                    </div>
+
+                    <!-- Derived Stats -->
+                    <div class="stats-section">
+                        <h3>Derived Stats</h3>
+                        <div class="stat-row">
+                            <span class="stat-label">❤️ Health</span>
+                            <span class="stat-value" id="stat-hp"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">💙 Mana</span>
+                            <span class="stat-value" id="stat-mp"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">⚔️ Damage</span>
+                            <span class="stat-value" id="stat-damage"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">🛡️ Defense</span>
+                            <span class="stat-value" id="stat-defense"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">💥 Crit Chance</span>
+                            <span class="stat-value" id="stat-crit-chance"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">🏃 Attack Speed</span>
+                            <span class="stat-value" id="stat-attack-speed"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">🚫 Dodge Chance</span>
+                            <span class="stat-value" id="stat-dodge-chance"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">✨ Magic Damage</span>
+                            <span class="stat-value" id="stat-magic-damage"></span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn" id="close-stats-btn">Close</button>
             </div>
         </div>
 

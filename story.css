@@ -852,40 +852,115 @@ em, i {
     overflow-x: auto;
 }
 
-.shop-grid {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 20px;
-    margin: 20px 0;
+.shop-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0;
+    padding: 10px;
+    background: rgba(10, 20, 40, 0.6);
+    border-radius: 5px;
+    border-left: 3px solid #ffd700;
 }
 
-.shop-items {
-    background: rgba(10, 20, 40, 0.6);
-    padding: 15px;
-    border-radius: 5px;
+.player-gold-amount {
+    color: #00ff00;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.shop-tabs {
+    display: flex;
+    gap: 5px;
+    margin: 15px 0;
+    border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.shop-tab-btn {
+    padding: 10px 20px;
+    background: rgba(20, 40, 60, 0.6);
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.shop-tab-btn:hover {
+    color: #ffd700;
+    background: rgba(40, 80, 120, 0.6);
+}
+
+.shop-tab-btn.active {
+    color: #ffd700;
+    border-bottom-color: #ffd700;
+    background: rgba(40, 80, 120, 0.8);
+}
+
+.shop-tab-content {
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 15px 0;
+}
+
+.shop-tab-content.hidden {
+    display: none;
+}
+
+.shop-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+    padding: 5px;
 }
 
 .shop-item {
     background: rgba(20, 40, 60, 0.8);
-    padding: 10px;
-    margin: 8px 0;
-    border-radius: 3px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    padding: 12px;
+    border-radius: 5px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .shop-item:hover {
-    background: rgba(40, 80, 120, 0.9);
+    background: rgba(40, 80, 120, 0.95);
+    border-color: rgba(255, 215, 0, 0.7);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+}
+
+.shop-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
 }
 
 .shop-item-name {
     color: #ffd700;
     font-weight: bold;
+    flex: 1;
 }
 
 .shop-item-price {
     color: #00ff00;
+    font-size: 0.95em;
+    min-width: 70px;
+    text-align: right;
+}
+
+.shop-item-quantity {
+    color: #88ccff;
     font-size: 0.9em;
+    margin-left: 10px;
+}
+
+.shop-item-description {
+    color: #888;
+    font-size: 0.85em;
+    font-style: italic;
 }
 
 .player-gold {

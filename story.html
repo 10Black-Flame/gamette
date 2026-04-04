@@ -323,16 +323,27 @@
         <div id="shop-screen" class="screen modal-screen hidden">
             <div class="modal-content">
                 <h2 id="shop-name"></h2>
-                <div class="shop-grid">
-                    <div class="shop-items">
-                        <h3>Buy</h3>
-                        <div id="shop-items-list"></div>
-                    </div>
-                    <div class="player-gold">
-                        <p>Gold: <span id="player-gold"></span></p>
-                    </div>
+                <div class="shop-info">
+                    <p>Gold: <span id="shop-player-gold" class="player-gold-amount">0</span></p>
                 </div>
-                <button class="btn" id="close-shop-btn">Close</button>
+                
+                <!-- Shop Tabs -->
+                <div class="shop-tabs">
+                    <button class="shop-tab-btn active" data-tab="buy">🛍️ Buy</button>
+                    <button class="shop-tab-btn" data-tab="sell">💰 Sell</button>
+                </div>
+                
+                <!-- Buy Tab -->
+                <div id="shop-buy-tab" class="shop-tab-content active">
+                    <div id="shop-items-list" class="shop-items-grid"></div>
+                </div>
+                
+                <!-- Sell Tab -->
+                <div id="shop-sell-tab" class="shop-tab-content hidden">
+                    <div id="shop-sell-items-list" class="shop-items-grid"></div>
+                </div>
+                
+                <button class="btn btn-primary" id="close-shop-btn">Close Shop</button>
             </div>
         </div>
 

@@ -289,6 +289,79 @@ let gameState = {
     isServerMode: false // Set to true if server is running
 };
 
+// Regional Mob Spawning System
+let regionState = {
+    forest: { kills: 0, spawnedMobs: [] },
+    cave: { kills: 0, spawnedMobs: [] },
+    mountains: { kills: 0, spawnedMobs: [] },
+    tower: { kills: 0, spawnedMobs: [] },
+    castle: { kills: 0, spawnedMobs: [] },
+    dungeon: { kills: 0, spawnedMobs: [] }
+};
+
+function initializeRegionalState() {
+    Object.keys(regionState).forEach(region => {
+        regionState[region].kills = 0;
+        regionState[region].spawnedMobs = [];
+    });
+}
+
+function getRegionSpawnTier(regionId, kills) {
+    const pool = GAME_DATA.regionMobPools[regionId];
+    if (!pool) return 'common';
+    const { elite, miniBoss, boss } = pool.killThresholds;
+    if (kills >= boss) return 'boss';
+    if (kills >= miniBoss) return 'miniBoss';
+    if (kills >= elite) return 'elite';
+    return 'common';
+}
+
+function spawnNewMob(regionId) {
+    const region = GAME_DATA.regionMobPools[regionId];
+    if (!region) return null;
+    
+    const state = regionState[regionId];
+    const tier = getRegionSpawnTier(regionId, state.kills);
+    
+    let mobId, mobList;
+    if (tier === 'boss') {
+        mobId = region.regionalBoss;
+    } else if (tier === 'miniBoss') {
+        mobId = region.miniBoss;
+    } else if (tier === 'elite') {
+        mobList = region.eliteMobs;
+        mobId = mobList[Math.floor(Math.random() * mobList.length)];
+    } else {
+        mobList = region.commonMobs;
+        mobId = mobList[Math.floor(Math.random() * mobList.length)];
+    }
+    
+    let mob = null;
+    if (tier === 'boss') {
+        mob = JSON.parse(JSON.stringify(GAME_DATA.regionalBosses[mobId]));
+    } else if (tier === 'miniBoss') {
+        mob = JSON.parse(JSON.stringify(GAME_DATA.miniBosses[mobId]));
+    } else if (tier === 'elite') {
+        const variant = GAME_DATA.eliteMobVariants[mobId];
+        const baseMob = GAME_DATA.enemies[variant.baseId];
+        mob = JSON.parse(JSON.stringify(baseMob));
+        mob.id = mobId;
+        mob.name = variant.name;
+        mob.level = Math.ceil(mob.level * 1.2 + Math.random() * 2);
+        mob.hp = Math.ceil(mob.hp * variant.statMultiplier);
+        mob.mp = Math.ceil(mob.mp * variant.statMultiplier);
+        mob.attack = Math.ceil(mob.attack * variant.statMultiplier);
+        mob.defense = Math.ceil(mob.defense * variant.statMultiplier);
+        mob.exp = Math.ceil(mob.exp * variant.expMultiplier);
+        mob.gold = Math.ceil(mob.gold * variant.goldMultiplier);
+        mob.elite = true;
+    } else {
+        mob = JSON.parse(JSON.stringify(GAME_DATA.enemies[mobId]));
+    }
+    
+    return mob;
+}
+
 // UI Elements
 const screens = {
     login: document.getElementById('login-screen'),
@@ -897,6 +970,9 @@ function startGame(name, classType) {
     gameState.gameStarted = true;
     gameState.playerId = `${gameState.userId}_${Date.now()}`;
     
+    // Initialize regional mob system
+    initializeRegionalState();
+    
     // Add starting items
     gameState.player.addItem('herb', 2);
     gameState.player.addItem('mushroom', 1);
@@ -1172,6 +1248,11 @@ function claimCombatRewards() {
     gameState.pendingCombatRewards = null;
     hideCombatVictoryModal();
     updateUI();
+    
+    // Auto-spawn next mob in the region
+    if (gameState.player.currentLocation && regionState[gameState.player.currentLocation]) {
+        loadLocation(gameState.player.currentLocation);
+    }
 }
 
 // ============ LOCATION SYSTEM ============
@@ -1209,8 +1290,42 @@ function loadLocation(locationId) {
         }
     });
 
-    // Update Enemies
-    if (location.enemies && location.enemies.length > 0) {
+    // Update Enemies - Dynamic Spawning System
+    if (regionState[locationId]) {
+        const state = regionState[locationId];
+        
+        // Ensure proper number of spawned mobs (1-3 depending on kill count)
+        while (state.spawnedMobs.length < Math.min(1 + Math.floor(state.kills / 6), 3)) {
+            const newMob = spawnNewMob(locationId);
+            if (newMob) {
+                newMob.spawnId = Math.random().toString(36).substr(2, 9);
+                state.spawnedMobs.push(newMob);
+            } else {
+                break;
+            }
+        }
+        
+        // Display spawned mobs
+        state.spawnedMobs.forEach(mob => {
+            const enemyElement = createEnemyElement(mob);
+            npcsList.appendChild(enemyElement);
+        });
+        
+        // Show difficulty progression
+        const tier = getRegionSpawnTier(locationId, state.kills);
+        const regionName = GAME_DATA.regionMobPools[locationId]?.name || '';
+        const tierDisplay = tier === 'boss' ? '👑 BOSS' : tier === 'miniBoss' ? '🏆 MINI-BOSS' : tier === 'elite' ? '⭐ ELITE' : '⚔️ Normal';
+        const progressNote = document.createElement('div');
+        progressNote.style.margin = '10px 0';
+        progressNote.style.padding = '10px';
+        progressNote.style.background = 'rgba(255, 215, 0, 0.1)';
+        progressNote.style.borderRadius = '6px';
+        progressNote.style.color = '#ffd700';
+        progressNote.style.fontSize = '0.9em';
+        progressNote.innerHTML = `${tierDisplay} | Kills in ${regionName}: ${state.kills}`;
+        npcsList.appendChild(progressNote);
+    } else if (location.enemies && location.enemies.length > 0) {
+        // Fallback for non-dynamic regions
         location.enemies.forEach(enemyId => {
             const enemy = GAME_DATA.enemies[enemyId];
             if (enemy) {
@@ -1439,7 +1554,7 @@ function interactWithNPC(npc) {
     }
     
     if (npc.type === 'shopkeeper') {
-        openShop(npc);
+        openShop(npc.id);
         return;
     } else if (npc.type === 'quest_giver') {
         if (offerQuestToPlayer(npc)) return;
@@ -1451,42 +1566,178 @@ function interactWithNPC(npc) {
     alert(`${npc.name}${emotionModifier}: "${dialogue}"`);
 }
 
-function openShop(npc) {
-    document.getElementById('shop-name').textContent = `${npc.name}'s Shop`;
+// Generate shop inventory with rare items at low probability
+function generateShopInventory(shop) {
+    let inventory = [...shop.baseInventory];
+    
+    // Add rare items based on probability
+    if (Math.random() < shop.rareChance && shop.rareInventory.length > 0) {
+        const rareItem = shop.rareInventory[Math.floor(Math.random() * shop.rareInventory.length)];
+        // Add 1-2 rare items
+        inventory.push(rareItem);
+        if (Math.random() < shop.rareChance * 0.5) {
+            const anotherRare = shop.rareInventory[Math.floor(Math.random() * shop.rareInventory.length)];
+            if (anotherRare !== rareItem) inventory.push(anotherRare);
+        }
+    }
+    
+    return inventory;
+}
+
+function openShop(npcId) {
+    let shop = null;
+    let shopName = '';
+    
+    // Determine which shop based on NPC type
+    const npc = GAME_DATA.npcs[npcId];
+    if (npc) {
+        if (npc.type === 'shopkeeper') {
+            if (npc.name === 'Merchant') shop = GAME_DATA.shops.general_store;
+            else if (npc.name === 'Blacksmith') shop = GAME_DATA.shops.blacksmith_shop;
+            else if (npc.name === 'Alchemist') shop = GAME_DATA.shops.alchemist_shop;
+            else shop = GAME_DATA.shops.general_store;
+            shopName = shop.name;
+        }
+    }
+    
+    if (!shop) shop = GAME_DATA.shops.general_store;
+    
+    // Store current shop for reference
+    gameState.currentShop = shop;
+    gameState.shopInventory = generateShopInventory(shop);
+    
+    document.getElementById('shop-name').textContent = shopName || shop.name;
+    document.getElementById('shop-player-gold').textContent = gameState.player.gold;
+    
+    // Setup tab switching
+    document.querySelectorAll('.shop-tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => switchShopTab(e.target.dataset.tab));
+    });
+    
+    // Display buy tab by default
+    switchShopTab('buy');
+    
+    showScreen('shop');
+}
+
+function switchShopTab(tabName) {
+    // Hide all tabs
+    document.getElementById('shop-buy-tab').classList.add('hidden');
+    document.getElementById('shop-sell-tab').classList.add('hidden');
+    
+    // Remove active state from all buttons
+    document.querySelectorAll('.shop-tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    if (tabName === 'buy') {
+        document.getElementById('shop-buy-tab').classList.remove('hidden');
+        document.querySelector('[data-tab="buy"]').classList.add('active');
+        populateShopBuyList();
+    } else if (tabName === 'sell') {
+        document.getElementById('shop-sell-tab').classList.remove('hidden');
+        document.querySelector('[data-tab="sell"]').classList.add('active');
+        populateShopSellList();
+    }
+}
+
+function populateShopBuyList() {
     const shopItemsList = document.getElementById('shop-items-list');
     shopItemsList.innerHTML = '';
-
-    let shopItems = [];
-    if (npc.offers === 'rest') shopItems = ['herb', 'mushroom'];
-    else if (npc.offers === 'equipment') shopItems = ['sword', 'shield', 'dark_armor'];
-    else if (npc.offers === 'potions') shopItems = ['herb', 'mushroom', 'mana_potion'];
-
-    shopItems.forEach(itemId => {
+    
+    if (!gameState.shopInventory || !gameState.currentShop) return;
+    
+    // Remove duplicates and create item display
+    const itemsToShow = [...new Set(gameState.shopInventory)];
+    
+    itemsToShow.forEach(itemId => {
         const item = GAME_DATA.items[itemId];
         if (item) {
             const shopItem = document.createElement('div');
             shopItem.className = 'shop-item';
+            
+            let rarity = '';
+            if (gameState.currentShop.rareInventory && gameState.currentShop.rareInventory.includes(itemId)) {
+                rarity = ' ⭐ RARE';
+            }
+            
             shopItem.innerHTML = `
-                <div class="shop-item-name">${item.name}</div>
-                <div class="shop-item-price">${item.gold} gold</div>
+                <div class="shop-item-header">
+                    <div class="shop-item-name">${item.name}${rarity}</div>
+                    <div class="shop-item-price">💰 ${item.gold}</div>
+                </div>
+                <div class="shop-item-description">${item.type}</div>
             `;
+            
             shopItem.addEventListener('click', () => buyItem(item));
+            shopItem.style.cursor = 'pointer';
             shopItemsList.appendChild(shopItem);
         }
     });
+}
 
-    document.getElementById('player-gold').textContent = gameState.player.gold;
-    showScreen('shop');
+function populateShopSellList() {
+    const shopSellList = document.getElementById('shop-sell-items-list');
+    shopSellList.innerHTML = '';
+    
+    if (!gameState.player.inventory || gameState.player.inventory.length === 0) {
+        shopSellList.innerHTML = '<p style="text-align:center; color:#999;">Your inventory is empty</p>';
+        return;
+    }
+    
+    gameState.player.inventory.forEach(invItem => {
+        const item = GAME_DATA.items[invItem.id];
+        if (item && item.gold > 0) {  // Only sellable items with gold value
+            const sellPrice = Math.floor(item.gold * 0.75); // Players get 75% of item value
+            const shopItem = document.createElement('div');
+            shopItem.className = 'shop-item';
+            
+            shopItem.innerHTML = `
+                <div class="shop-item-header">
+                    <div class="shop-item-name">${item.name}</div>
+                    <div class="shop-item-quantity">x${invItem.quantity}</div>
+                </div>
+                <div class="shop-item-description">Sell for: 💰 ${sellPrice}</div>
+            `;
+            
+            shopItem.addEventListener('click', () => sellItem(invItem.id, sellPrice, invItem.quantity));
+            shopItem.style.cursor = 'pointer';
+            shopSellList.appendChild(shopItem);
+        }
+    });
 }
 
 function buyItem(item) {
+    if (!item) return;
+    
     if (gameState.player.gold >= item.gold) {
         gameState.player.gold -= item.gold;
         gameState.player.addItem(item.id);
-        addGameLog(`Bought ${item.name} for ${item.gold} gold`);
+        const rarity = gameState.currentShop.rareInventory?.includes(item.id) ? ' (RARE)' : '';
+        addGameLog(`Bought ${item.name}${rarity} for ${item.gold} gold`, 'success');
+        document.getElementById('shop-player-gold').textContent = gameState.player.gold;
+        populateShopBuyList(); // Refresh buy list
         updateUI();
     } else {
-        alert('Not enough gold!');
+        addGameLog('Not enough gold!', 'enemy');
+    }
+}
+
+function sellItem(itemId, sellPrice, quantity) {
+    const item = GAME_DATA.items[itemId];
+    if (!item) return;
+    
+    // Find the inventory item and reduce quantity
+    const invItem = gameState.player.inventory.find(i => i.id === itemId);
+    if (invItem && invItem.quantity > 0) {
+        invItem.quantity--;
+        if (invItem.quantity === 0) {
+            gameState.player.inventory = gameState.player.inventory.filter(i => i.id !== itemId);
+        }
+        
+        gameState.player.gold += sellPrice;
+        addGameLog(`Sold ${item.name} for ${sellPrice} gold`, 'success');
+        document.getElementById('shop-player-gold').textContent = gameState.player.gold;
+        populateShopSellList(); // Refresh sell list
+        updateUI();
     }
 }
 
@@ -1958,7 +2209,13 @@ function enemyTurn(defenseBonus = 0) {
 function endCombat(victory) {
     gameState.player.inCombat = false;
     const enemy = gameState.player.currentEnemy;
-    const enemyData = (enemy && GAME_DATA.enemies && GAME_DATA.enemies[enemy.id]) ? GAME_DATA.enemies[enemy.id] : { exp: 0, gold: 0, drops: [] };
+    const currentLocation = gameState.player.currentLocation;
+    const locationState = regionState[currentLocation];
+    
+    const enemyData = (enemy && GAME_DATA.enemies && GAME_DATA.enemies[enemy.id]) ? GAME_DATA.enemies[enemy.id] : 
+                     (enemy && GAME_DATA.miniBosses && GAME_DATA.miniBosses[enemy.id]) ? GAME_DATA.miniBosses[enemy.id] :
+                     (enemy && GAME_DATA.regionalBosses && GAME_DATA.regionalBosses[enemy.id]) ? GAME_DATA.regionalBosses[enemy.id] :
+                     { exp: 0, gold: 0, drops: [] };
 
     if (victory) {
         if (enemy && enemy.id) {
@@ -1981,7 +2238,42 @@ function endCombat(victory) {
 
         gameState.player.enemiesKilled++;
 
-        addGameLog(`Victory! ${enemy?.name || 'The foe'} has been defeated. Claim your rewards from the reward panel.`, 'success');
+        // Dynamic mob system: remove defeated mob and increment counter
+        if (locationState && enemy.spawnId) {
+            const mobIndex = locationState.spawnedMobs.findIndex(m => m.spawnId === enemy.spawnId);
+            if (mobIndex !== -1) {
+                locationState.spawnedMobs.splice(mobIndex, 1);
+            }
+            locationState.kills++;
+            
+            // Show tier advancement notifications
+            const tier = getRegionSpawnTier(currentLocation, locationState.kills);
+            const prevTier = getRegionSpawnTier(currentLocation, locationState.kills - 1);
+            
+            if (tier !== prevTier) {
+                if (tier === 'boss') {
+                    addGameLog('🚨 WARNING: The final boss has appeared!', 'success');
+                    playSound(1200, 600, 'sine');
+                } else if (tier === 'miniBoss') {
+                    addGameLog('🏆 A mighty mini-boss now stalks these lands!', 'success');
+                    playSound(900, 400, 'sine');
+                } else if (tier === 'elite') {
+                    addGameLog('⭐ Elite foes now appear in this region!', 'info');
+                }
+            }
+        }
+
+        if (enemy && (enemy.miniBoss || enemy.boss)) {
+            if (enemy.boss) {
+                addGameLog(`LEGENDARY! You defeated the regional boss: ${enemy.name}!`, 'success');
+                unlockAchievement('bossMaster');
+            } else if (enemy.miniBoss) {
+                addGameLog(`Mighty victory! You vanquished the mini-boss: ${enemy.name}!`, 'success');
+                unlockAchievement('miniBossMaster');
+            }
+        } else {
+            addGameLog(`Victory! ${enemy?.name || 'The foe'} has been defeated. Claim your rewards from the reward panel.`, 'success');
+        }
 
         if (gameState.player.enemiesKilled === 1) unlockAchievement('firstBlood');
         if (enemy && enemy.name && enemy.name.toLowerCase().includes('dragon')) unlockAchievement('dragonSlayer');
@@ -2389,6 +2681,9 @@ function loadGame(savedData = null) {
     const save = savedData || getSavedGameForCurrentUser();
     if (!save) return;
     gameState.player = new Player(save.player.name, save.player.classType);
+    
+    // Initialize regional mob system
+    initializeRegionalState();
 
     // Restore world time
     if (save.worldTime) {

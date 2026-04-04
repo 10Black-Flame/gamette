@@ -81,7 +81,7 @@ Multi-user support with login/registration:
 
 ### Modified Files:
 
-1. **`story.html`** (+50 lines)
+1. **`index.html`** (+50 lines)
    - Added login screen with forms
    - Added world info panel display
    - Added script reference for world-simulation.js
@@ -127,7 +127,7 @@ Multi-user support with login/registration:
 ### Playing WITHOUT Server (Default)
 
 ```
-1. Open story.html in your browser
+1. Open index.html in your browser
 2. Enter any username (no password needed)
 3. Create your character
 4. Watch the world evolve!
@@ -153,7 +153,7 @@ npm install
 npm start
 ```
 
-Then visit: `http://localhost:3000/story.html`
+Then visit: `http://localhost:3000/index.html`
 
 **Features with Server:**
 - ✅ Everything above PLUS:
@@ -338,7 +338,7 @@ CREATE TABLE world_state (
 
 ### Local Play (No Setup)
 ```
--> Open story.html directly
+-> Open index.html directly
 -> Play!
 ```
 
@@ -347,7 +347,7 @@ CREATE TABLE world_state (
 cd story
 npm install
 npm start
-# Visit http://localhost:3000/story.html
+# Visit http://localhost:3000/index.html
 ```
 
 ---

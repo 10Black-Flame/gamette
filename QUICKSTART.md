@@ -5,8 +5,8 @@ Welcome, brave adventurer! This guide will help you get started with your epic f
 ## 🚀 Getting Started (30 seconds)
 
 ### Step 1: Open the Game
-- **Option A (Easy)**: Double-click `story.html` 
-- **Option B (With Server)**: Run `node server.js` then visit `http://localhost:3000/story.html`
+- **Option A (Easy)**: Double-click `index.html` 
+- **Option B (With Server)**: Run `node server.js` then visit `http://localhost:3000/index.html`
 
 ### Step 2: Create Your Character
 1. Enter your hero's name

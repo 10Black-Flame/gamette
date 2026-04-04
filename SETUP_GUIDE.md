@@ -7,7 +7,7 @@
 **Best for**: Testing, casual play, single-device gaming
 
 ```
-1. Open: story.html
+1. Open: index.html
 2. Enter username: (any name, no password needed)
 3. Create character
 4. Start playing!
@@ -37,7 +37,7 @@ npm install
 npm start
 ```
 
-Then visit: **http://localhost:3000/story.html**
+Then visit: **http://localhost:3000/index.html**
 
 #### Mac/Linux Setup:
 
@@ -52,7 +52,7 @@ npm install
 npm start
 ```
 
-Then visit: **http://localhost:3000/story.html**
+Then visit: **http://localhost:3000/index.html**
 
 ✅ All features work  
 ✅ Cloud saves  
@@ -172,7 +172,7 @@ Output will show:
 ╔═══════════════════════════════════════════╗
 ║  Chronicles of Aetheria Server Running   ║
 ║  Server: http://localhost:3000           ║
-║  Game: http://localhost:3000/story.html  ║
+║  Game: http://localhost:3000/index.html  ║
 ╚═══════════════════════════════════════════╝
 ```
 
@@ -204,7 +204,7 @@ taskkill /PID xxxxx /F
 ### From Local to Server
 
 1. Start server: `npm start`
-2. Visit: `http://localhost:3000/story.html`
+2. Visit: `http://localhost:3000/index.html`
 3. Register new account
 4. Create character
 5. Old local saves still work in browser
@@ -212,7 +212,7 @@ taskkill /PID xxxxx /F
 ### From Server to Local
 
 1. Stop server: `Ctrl + C`
-2. Open: `story.html` directly
+2. Open: `index.html` directly
 3. Local saves from history will load
 4. You can continue with new username
 
@@ -344,7 +344,7 @@ A: Not yet, but multiplayer is planned!
 
 | File | Purpose | Edit? |
 |------|---------|-------|
-| story.html | Game interface | ❌ No |
+| index.html | Game interface | ❌ No |
 | story.js | Game logic | ⚠️ Advanced |
 | story.css | Styling | ✅ Yes |
 | game-data.js | World data | ✅ Yes |
@@ -432,7 +432,7 @@ Press `F12` → Console tab:
 
 Everything is set up. Here's what to do:
 
-1. **Local Play**: Open `story.html`
+1. **Local Play**: Open `index.html`
 2. **Server Play**: Run `npm start`
 3. **Happy Gaming**: Create character and explore!
 

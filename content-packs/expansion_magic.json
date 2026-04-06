@@ -40,9 +40,9 @@
     "arcane_grimoire": "Advanced magical theory and spell construction. Learn to weave mana into complex patterns that defy the laws of nature. Includes forbidden knowledge that could corrupt the unwary mage."
   },
   "enemies": {
-    "fire_elemental": { "name": "Fire Elemental", "hp": 100, "attack": 22, "defense": 8, "exp": 120, "gold": 70, "drops": ["fire_essence"] },
-    "water_spirit": { "name": "Water Spirit", "hp": 85, "attack": 16, "defense": 12, "exp": 100, "gold": 60, "drops": ["water_essence"] },
-    "summoned_imp": { "name": "Summoned Imp", "hp": 40, "attack": 12, "defense": 4, "exp": 50, "gold": 25, "drops": ["imp_horn"] }
+    "fire_elemental": { "name": "Fire Elemental", "hp": 100, "attack": 22, "defense": 8, "exp": 72, "gold": 70, "drops": ["fire_essence"] },
+    "water_spirit": { "name": "Water Spirit", "hp": 85, "attack": 16, "defense": 12, "exp": 60, "gold": 60, "drops": ["water_essence"] },
+    "summoned_imp": { "name": "Summoned Imp", "hp": 40, "attack": 12, "defense": 4, "exp": 30, "gold": 25, "drops": ["imp_horn"] }
   },
   "guilds": [
     {

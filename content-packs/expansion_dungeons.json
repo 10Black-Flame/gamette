@@ -36,12 +36,12 @@
     "crystal_armor": { "id": "crystal_armor", "name": "Crystal Armor", "type": "armor", "defense": 20, "gold": 1200 }
   },
   "enemies": {
-    "crystal_golem": { "name": "Crystal Golem", "hp": 120, "attack": 18, "defense": 12, "exp": 90, "gold": 80, "drops": ["crystal_shard", "magic_crystal"] },
-    "mana_wraith": { "name": "Mana Wraith", "hp": 60, "attack": 12, "defense": 8, "exp": 48, "gold": 40, "drops": ["magic_crystal"] },
-    "young_dragon": { "name": "Young Dragon", "hp": 200, "attack": 30, "defense": 18, "exp": 180, "gold": 200, "drops": ["dragon_scale"] },
-    "dragon_whelp": { "name": "Dragon Whelp", "hp": 80, "attack": 20, "defense": 10, "exp": 72, "gold": 100, "drops": ["dragon_scale"] },
-    "stone_giant": { "name": "Stone Giant", "hp": 180, "attack": 25, "defense": 20, "exp": 120, "gold": 120, "drops": ["ore", "gem"] },
-    "fungus_monster": { "name": "Fungus Monster", "hp": 90, "attack": 15, "defense": 6, "exp": 60, "gold": 60, "drops": ["glow_fungus", "herb"] }
+    "crystal_golem": { "name": "Crystal Golem", "hp": 120, "attack": 18, "defense": 12, "exp": 150, "gold": 80, "drops": ["crystal_shard", "magic_crystal"] },
+    "mana_wraith": { "name": "Mana Wraith", "hp": 60, "attack": 12, "defense": 8, "exp": 80, "gold": 40, "drops": ["magic_crystal"] },
+    "young_dragon": { "name": "Young Dragon", "hp": 200, "attack": 30, "defense": 18, "exp": 300, "gold": 200, "drops": ["dragon_scale"] },
+    "dragon_whelp": { "name": "Dragon Whelp", "hp": 80, "attack": 20, "defense": 10, "exp": 120, "gold": 100, "drops": ["dragon_scale"] },
+    "stone_giant": { "name": "Stone Giant", "hp": 180, "attack": 25, "defense": 20, "exp": 200, "gold": 120, "drops": ["ore", "gem"] },
+    "fungus_monster": { "name": "Fungus Monster", "hp": 90, "attack": 15, "defense": 6, "exp": 100, "gold": 60, "drops": ["glow_fungus", "herb"] }
   },
   "npcs": {
     "dwarf_king": { "name": "King Stonebeard", "role": "ruler", "dialogue": "Welcome to my underground kingdom, surface dweller. What brings you to these depths?" },

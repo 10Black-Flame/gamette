@@ -1,0 +1,77 @@
+{
+  "name": "Arcane Arts Expansion",
+  "version": "1.0",
+  "description": "Adds new magical classes, spells, and enchanted items",
+  "classes": {
+    "elementalist": {
+      "name": "Elementalist",
+      "baseHP": 75,
+      "baseMP": 60,
+      "baseAttack": 6,
+      "baseDefense": 2,
+      "baseSpeed": 9,
+      "description": "Master of the four elements: fire, water, earth, and air",
+      "abilities": ["fireball", "water_shield", "earthquake", "whirlwind"],
+      "growth": { "hp": 3, "mp": 6, "attack": 1, "defense": 0, "speed": 2 }
+    },
+    "summoner": {
+      "name": "Summoner",
+      "baseHP": 70,
+      "baseMP": 55,
+      "baseAttack": 5,
+      "baseDefense": 3,
+      "baseSpeed": 7,
+      "description": "Calls forth creatures from other planes to aid in battle",
+      "abilities": ["summon_imp", "summon_elemental", "banish", "planar_shift"],
+      "growth": { "hp": 3, "mp": 5, "attack": 1, "defense": 1, "speed": 1 }
+    }
+  },
+  "items": {
+    "fire_staff": { "id": "fire_staff", "name": "Staff of Flames", "type": "weapon", "attack": 20, "gold": 400, "effect": "fire_damage" },
+    "ice_wand": { "id": "ice_wand", "name": "Wand of Frost", "type": "weapon", "attack": 18, "gold": 350, "effect": "ice_damage" },
+    "summoning_tome": { "id": "summoning_tome", "name": "Tome of Summoning", "type": "book", "gold": 500 },
+    "elemental_ring": { "id": "elemental_ring", "name": "Ring of Elements", "type": "accessory", "gold": 600, "effect": "elemental_resistance" },
+    "mana_crystal": { "id": "mana_crystal", "name": "Mana Crystal", "type": "consumable", "effect": "restore_mp", "value": 100, "gold": 150 },
+    "spell_component": { "id": "spell_component", "name": "Spell Component", "type": "material", "gold": 25 }
+  },
+  "bookContent": {
+    "summoning_tome": "The ancient art of summoning requires perfect control over one's will and mana. The tome details rituals for calling forth imps, elementals, and otherworldly beings. Warning: Poorly executed summons can have disastrous consequences.",
+    "elemental_codex": "The four elements - fire, water, earth, air - each have their own properties and weaknesses. Master them all to become a true elementalist. Fire burns bright but can be extinguished. Water flows but can be contained. Earth stands firm but can be eroded. Air moves freely but can be still.",
+    "arcane_grimoire": "Advanced magical theory and spell construction. Learn to weave mana into complex patterns that defy the laws of nature. Includes forbidden knowledge that could corrupt the unwary mage."
+  },
+  "enemies": {
+    "fire_elemental": { "name": "Fire Elemental", "hp": 100, "attack": 22, "defense": 8, "exp": 120, "gold": 70, "drops": ["fire_essence"] },
+    "water_spirit": { "name": "Water Spirit", "hp": 85, "attack": 16, "defense": 12, "exp": 100, "gold": 60, "drops": ["water_essence"] },
+    "summoned_imp": { "name": "Summoned Imp", "hp": 40, "attack": 12, "defense": 4, "exp": 50, "gold": 25, "drops": ["imp_horn"] }
+  },
+  "guilds": [
+    {
+      "id": "arcane_academy",
+      "name": "Arcane Academy",
+      "emblem": "🎓",
+      "level": 1,
+      "maxMembers": 25,
+      "perks": { "mpBonus": 0.15, "spellDamage": 0.12, "manaRegen": 0.1 },
+      "description": "An institution dedicated to the advancement of magical knowledge and spellcraft",
+      "questLine": "magical_mastery"
+    }
+  ],
+  "quests": {
+    "elemental_trials": {
+      "id": "elemental_trials",
+      "title": "Elemental Trials",
+      "description": "Prove your mastery over the four elements by defeating elemental guardians.",
+      "reward": 600,
+      "required": false,
+      "startLocation": "library"
+    },
+    "summoner_apprentice": {
+      "id": "summoner_apprentice",
+      "title": "Apprentice Summoner",
+      "description": "Learn the basics of summoning by successfully calling forth and controlling an imp.",
+      "reward": 400,
+      "required": false,
+      "startLocation": "library"
+    }
+  }
+}

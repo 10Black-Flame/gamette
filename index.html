@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronicles of Aetheria - Fantasy Adventure Game</title>
+    <link rel="stylesheet" href="story.css">
+</head>
+<body>
+    <!-- Main Game Container -->
+    <div id="game-container">
+        <!-- Screen: Login -->
+        <div id="login-screen" class="screen active">
+            <div class="screen-content">
+                <h1>Chronicles of Aetheria</h1>
+                <p>A Living World Awaits</p>
+                
+                <div id="login-form"> 
+                    <h2>Login</h2>
+                    <div class="form-group">
+                        <label for="login-username">Username:</label>
+                        <input type="text" id="login-username" placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password:</label>
+                        <input type="password" id="login-password" placeholder="Enter password">
+                    </div>
+                    <button class="btn btn-primary" id="login-btn">Login</button>
+                    <p id="login-error" class="error-message"></p>
+                    <div style="margin-top: 15px;">
+                        <button class="btn-link" id="forgot-password-btn">Forgot Password?</button>
+                    </div>
+                </div>
+
+                <div id="register-form" style="display: none;">
+                    <h2>Create Account</h2>
+                    <div class="form-group">
+                        <label for="register-username">Username:</label>
+                        <input type="text" id="register-username" placeholder="Choose username">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email:</label>
+                        <input type="email" id="register-email" placeholder="Enter email">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password:</label>
+                        <input type="password" id="register-password" placeholder="Create password">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password-confirm">Confirm Password:</label>
+                        <input type="password" id="register-password-confirm" placeholder="Confirm password">
+                    </div>
+                    <button class="btn btn-primary" id="register-btn">Create Account</button>
+                    <p id="register-error" class="error-message"></p>
+                </div>
+
+                <div class="form-group" style="margin-top: 30px;">
+                    <button class="btn btn-secondary" id="toggle-form-btn">Create New Account</button>
+                </div>
+
+                <div id="forgot-password-form" style="display: none;">
+                    <h2>Reset Password</h2>
+                    <p>Enter your username or email to receive a password reset token.</p>
+                    <div class="form-group">
+                        <label for="forgot-username">Username:</label>
+                        <input type="text" id="forgot-username" placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label for="forgot-email">Or Email:</label>
+                        <input type="email" id="forgot-email" placeholder="Enter email">
+                    </div>
+                    <button class="btn btn-primary" id="request-reset-btn">Send Reset Token</button>
+                    <button class="btn btn-secondary" id="back-to-login-btn">Back to Login</button>
+                    <p id="forgot-error" class="error-message"></p>
+                    <div id="reset-token-display" style="display: none; margin-top: 15px; padding: 10px; background: rgba(0, 100, 0, 0.2); border-radius: 5px;">
+                        <strong>Reset Token (Demo Mode):</strong><br>
+                        <span id="reset-token-text" style="font-family: monospace; word-break: break-all;"></span><br>
+                        <small>Use this token to reset your password below.</small>
+                    </div>
+                </div>
+
+                <div id="reset-password-form" style="display: none;">
+                    <h2>Enter New Password</h2>
+                    <div class="form-group">
+                        <label for="reset-token">Reset Token:</label>
+                        <input type="text" id="reset-token" placeholder="Enter reset token">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">New Password:</label>
+                        <input type="password" id="new-password" placeholder="Enter new password">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-new-password">Confirm New Password:</label>
+                        <input type="password" id="confirm-new-password" placeholder="Confirm new password">
+                    </div>
+                    <button class="btn btn-primary" id="reset-password-btn">Reset Password</button>
+                    <button class="btn btn-secondary" id="back-to-forgot-btn">Back</button>
+                    <p id="reset-error" class="error-message"></p>
+                </div>
+
+                <div id="world-time" class="world-time-display">🌍 World Time: <span id="world-time-display"></span></div>
+            </div>
+        </div>
+
+        <!-- Screen: Character Creation -->
+        <div id="character-creation-screen" class="screen">
+            <div class="screen-content">
+                <h1>Chronicles of Aetheria</h1>
+                <p>Welcome to the realm of Aetheria. Create your character to begin your legendary journey.</p>
+                
+                <div class="form-group">
+                    <label for="character-name">Enter your name:</label>
+                    <input type="text" id="character-name" placeholder="Enter character name">
+                </div>
+
+                <div class="form-group">
+                    <label>Choose your class:</label>
+                    <div class="class-selection">
+                        <div class="class-option" data-class="warrior">
+                            <h3>Warrior</h3>
+                            <p>Strong melee fighter</p>
+                            <p>HP: 120 | ATK: 15</p>
+                        </div>
+                        <div class="class-option" data-class="mage">
+                            <h3>Mage</h3>
+                            <p>Master of magic</p>
+                            <p>HP: 80 | MP: 50</p>
+                        </div>
+                        <div class="class-option" data-class="rogue">
+                            <h3>Rogue</h3>
+                            <p>Swift and deadly</p>
+                            <p>HP: 90 | DEF: 5</p>
+                        </div>
+                        <div class="class-option" data-class="cleric">
+                            <h3>Cleric</h3>
+                            <p>Holy healer</p>
+                            <p>HP: 100 | Healing</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="start-game-btn" class="btn btn-primary">Start Adventure</button>
+            </div>
+        </div>
+
+        <!-- Screen: Main Game -->
+        <div id="main-game-screen" class="screen">
+            <div class="game-header">
+                <div class="character-info">
+                    <h2 id="player-name"></h2>
+                    <p id="player-stats"></p>
+                    <div class="player-exp">
+                        <div class="exp-bar"><div id="exp-bar-fill"></div></div>
+                        <p id="exp-text"></p>
+                    </div>
+                </div>
+                <div class="game-menu">
+                    <button class="btn-small" id="inventory-btn">Inventory</button>
+                    <button class="btn-small" id="stats-btn">⚡ Stats</button>
+                    <button class="btn-small" id="quests-btn">Quests</button>
+                    <button class="btn-small" id="guild-btn">Guild</button>
+                    <button class="btn-small" id="crafting-btn">Craft</button>
+                    <button class="btn-small" id="achievements-btn">Achievements</button>
+                    <button class="btn-small" id="pet-btn">Pet</button>
+                    <button class="btn-small" id="enchantments-btn">Enchant</button>
+                    <button class="btn-small" id="classes-btn">Classes</button>
+                    <button class="btn-small" id="map-btn">Map</button>
+                    <button class="btn-small" id="save-btn">Save</button>
+                    <button class="btn-small" id="logout-btn">Logout</button>
+                </div>
+            </div>
+
+            <div id="world-info-panel">
+                <div class="info-row">
+                    <span class="label">🌍 World Time:</span>
+                    <span class="value" id="world-time-info"></span>
+                </div>
+                <div class="info-row">
+                    <span class="label">📊 Population:</span>
+                    <span class="value" id="population-info"></span>
+                </div>
+                <div class="info-row">
+                    <span class="label">📰 Active Events:</span>
+                    <span class="value" id="events-info"></span>
+                </div>
+            </div>
+
+            <div id="reward-notice" class="reward-notice hidden">
+                <p id="pending-reward-text"></p>
+                <button class="btn btn-primary" id="claim-pending-reward-btn">Claim Pending Reward</button>
+            </div>
+
+            <div class="game-content">
+                <!-- Location View -->
+                <div id="location-view" class="location">
+                    <h3 id="location-name"></h3>
+                    <p id="location-description"></p>
+                    <p id="location-note" class="location-note"></p>
+                    
+                    <div class="npcs-section">
+                        <h4>NPCs & Enemies</h4>
+                        <div id="npcs-list"></div>
+                    </div>
+
+                    <div class="items-section">
+                        <h4>Items</h4>
+                        <div id="items-list"></div>
+                    </div>
+
+                    <div class="exits-section">
+                        <h4>Exits</h4>
+                        <div id="exits-list"></div>
+                    </div>
+                    <div class="location-actions">
+                        <button class="btn btn-secondary hidden" id="open-quest-board-btn">Open Mission Board</button>
+                    </div>
+                </div>
+
+                <!-- Combat View (hidden by default) -->
+                <div id="combat-view" class="combat hidden">
+                    <div class="combat-info">
+                        <div class="enemy-side">
+                            <h3 id="enemy-name"></h3>
+                            <div class="health-bar">
+                                <div id="enemy-health-bar" class="health-fill"></div>
+                            </div>
+                            <p id="enemy-health-text"></p>
+                        </div>
+
+                        <div class="player-side">
+                            <h3>You</h3>
+                            <div class="health-bar">
+                                <div id="player-health-bar" class="health-fill"></div>
+                            </div>
+                            <p id="player-health-text"></p>
+                        </div>
+                    </div>
+
+                    <div class="combat-log" id="combat-log"></div>
+
+                    <div class="combat-actions">
+                        <button class="btn" id="attack-btn">Attack</button>
+                        <button class="btn" id="spell-btn">Cast Spell</button>
+                        <button class="btn" id="defend-btn">Defend</button>
+                        <button class="btn" id="flee-btn">Flee</button>
+                    </div>
+                </div>
+
+                <div id="combat-victory-modal" class="screen modal-screen hidden">
+                    <div class="modal-content">
+                        <h2 id="combat-victory-title">Enemy Defeated</h2>
+                        <p id="combat-victory-description">You can claim your spoils from the fallen enemy.</p>
+                        <div id="combat-rewards-summary" class="reward-summary"></div>
+                        <button class="btn btn-primary" id="claim-reward-btn">Claim Reward</button>
+                        <button class="btn btn-secondary" id="dismiss-reward-btn">Dismiss</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen: Character Stats -->
+        <div id="stats-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>⚔️ Character Stats</h2>
+                <div class="stats-grid">
+                    <!-- Primary Stats -->
+                    <div class="stats-section">
+                        <h3>Primary Stats</h3>
+                        <div class="stat-row">
+                            <span class="stat-label">💪 Strength</span>
+                            <span class="stat-value" id="stat-strength"></span>
+                            <span class="stat-bonus" id="stat-strength-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">❤️‍🔥 Stamina</span>
+                            <span class="stat-value" id="stat-stamina"></span>
+                            <span class="stat-bonus" id="stat-stamina-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">🧠 Intelligence</span>
+                            <span class="stat-value" id="stat-intelligence"></span>
+                            <span class="stat-bonus" id="stat-intelligence-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">⚡ Speed</span>
+                            <span class="stat-value" id="stat-speed"></span>
+                            <span class="stat-bonus" id="stat-speed-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">🎯 Agility</span>
+                            <span class="stat-value" id="stat-agility"></span>
+                            <span class="stat-bonus" id="stat-agility-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">🍀 Luck</span>
+                            <span class="stat-value" id="stat-luck"></span>
+                            <span class="stat-bonus" id="stat-luck-bonus"></span>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Stats -->
+                    <div class="stats-section">
+                        <h3>Secondary Stats</h3>
+                        <div class="stat-row">
+                            <span class="stat-label">💚 Vitality</span>
+                            <span class="stat-value" id="stat-vitality"></span>
+                            <span class="stat-bonus" id="stat-vitality-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">📚 Wisdom</span>
+                            <span class="stat-value" id="stat-wisdom"></span>
+                            <span class="stat-bonus" id="stat-wisdom-bonus"></span>
+                        </div>
+                    </div>
+
+                    <!-- Derived Stats -->
+                    <div class="stats-section">
+                        <h3>Derived Stats</h3>
+                        <div class="stat-row">
+                            <span class="stat-label">❤️ Health</span>
+                            <span class="stat-value" id="stat-hp"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">💙 Mana</span>
+                            <span class="stat-value" id="stat-mp"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">⚔️ Damage</span>
+                            <span class="stat-value" id="stat-damage"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">🛡️ Defense</span>
+                            <span class="stat-value" id="stat-defense"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">💥 Crit Chance</span>
+                            <span class="stat-value" id="stat-crit-chance"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">🏃 Attack Speed</span>
+                            <span class="stat-value" id="stat-attack-speed"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">🚫 Dodge Chance</span>
+                            <span class="stat-value" id="stat-dodge-chance"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">✨ Magic Damage</span>
+                            <span class="stat-value" id="stat-magic-damage"></span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn" id="close-stats-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Screen: Inventory -->
+        <div id="inventory-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>Inventory</h2>
+                <div class="inventory-grid">
+                    <div class="inventory-items">
+                        <h3>Items</h3>
+                        <div id="inventory-items-list"></div>
+                    </div>
+                    <div class="equipment">
+                        <h3>Equipment</h3>
+                        <div id="equipment-list"></div>
+                    </div>
+                </div>
+                <button class="btn" id="close-inventory-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Screen: Quests -->
+        <div id="quests-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>Quests</h2>
+                <div id="quests-list"></div>
+                <button class="btn" id="close-quests-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Screen: Quest Board -->
+        <div id="quest-board-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>Quest Board</h2>
+                <div id="quest-board-list"></div>
+                <button class="btn" id="close-quest-board-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Screen: Map -->
+        <div id="map-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>World Map</h2>
+                <div id="world-map"></div>
+                <div id="map-location-details" class="map-details"></div>
+                <div id="map-book-list" class="map-book-list"></div>
+                <div class="map-controls">
+                    <button class="btn btn-secondary" id="scan-map-btn">🔍 Scan for Clues</button>
+                    <button class="btn" id="close-map-btn">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen: Book Reader -->
+        <div id="book-reader-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2 id="book-reader-title">Book</h2>
+                <div id="book-reader-content" class="book-reader-content"></div>
+                <div class="book-controls">
+                    <button class="btn btn-secondary" id="scan-book-btn">🔍 Scan for Clues</button>
+                    <button class="btn" id="close-book-reader-btn">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen: Shop -->
+        <div id="shop-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2 id="shop-name"></h2>
+                <div class="shop-info">
+                    <p>Gold: <span id="shop-player-gold" class="player-gold-amount">0</span></p>
+                </div>
+                
+                <!-- Shop Tabs -->
+                <div class="shop-tabs">
+                    <button class="shop-tab-btn active" data-tab="buy">🛍️ Buy</button>
+                    <button class="shop-tab-btn" data-tab="sell">💰 Sell</button>
+                </div>
+                
+                <!-- Buy Tab -->
+                <div id="shop-buy-tab" class="shop-tab-content active">
+                    <div id="shop-items-list" class="shop-items-grid"></div>
+                </div>
+                
+                <!-- Sell Tab -->
+                <div id="shop-sell-tab" class="shop-tab-content hidden">
+                    <div id="shop-sell-items-list" class="shop-items-grid"></div>
+                </div>
+                
+                <button class="btn btn-primary" id="close-shop-btn">Close Shop</button>
+            </div>
+        </div>
+
+        <!-- Screen: Guild -->
+        <div id="guild-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>⚔️ Guild Hall</h2>
+
+                <!-- Guild Status -->
+                <div id="guild-status" class="guild-section">
+                    <h3>Your Guild Status</h3>
+                    <div id="player-guild-info"></div>
+                </div>
+
+                <!-- Guild List -->
+                <div id="guild-list-section" class="guild-section">
+                    <h3>Available Guilds</h3>
+                    <div id="guild-list"></div>
+                </div>
+
+                <!-- Create Guild Form -->
+                <div id="create-guild-section" class="guild-section hidden">
+                    <h3>Create New Guild</h3>
+                    <div class="form-group">
+                        <label for="guild-name">Guild Name:</label>
+                        <input type="text" id="guild-name" placeholder="Enter guild name" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label for="guild-description">Description:</label>
+                        <textarea id="guild-description" placeholder="Describe your guild's purpose and goals" maxlength="200" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="guild-specialization">Guild Specialization:</label>
+                        <select id="guild-specialization">
+                            <option value="warriors">Warriors - Combat focused</option>
+                            <option value="mages">Mages - Magic focused</option>
+                            <option value="rogues">Rogues - Stealth focused</option>
+                            <option value="clerics">Clerics - Healing focused</option>
+                            <option value="merchants">Merchants - Trade focused</option>
+                            <option value="hunters">Hunters - Exploration focused</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="confirm-create-guild-btn">Create Guild</button>
+                    <button class="btn btn-secondary" id="cancel-create-guild-btn">Cancel</button>
+                </div>
+
+                <!-- Guild Details -->
+                <div id="guild-details-section" class="guild-section hidden">
+                    <h3 id="guild-details-name"></h3>
+                    <div id="guild-details-info"></div>
+                    <div id="guild-members-list"></div>
+                    <div id="guild-actions">
+                        <button class="btn" id="join-guild-btn">Join Guild</button>
+                        <button class="btn" id="leave-guild-btn">Leave Guild</button>
+                        <button class="btn" id="guild-scouting-btn">Scouting Missions</button>
+                        <button class="btn btn-danger" id="disband-guild-btn" style="display: none;">Disband Guild</button>
+                    </div>
+                </div>
+
+                <!-- Scouting Missions -->
+                <div id="scouting-section" class="guild-section hidden">
+                    <h3>Guild Scouting Missions</h3>
+                    <div id="active-scouting-missions"></div>
+                    <div id="available-scouting-missions"></div>
+                    <button class="btn btn-secondary" id="back-to-guild-btn">Back to Guild</button>
+                </div>
+
+                <!-- Navigation -->
+                <div class="guild-navigation">
+                    <button class="btn" id="create-guild-btn">Create Guild</button>
+                    <button class="btn" id="browse-guilds-btn">Browse Guilds</button>
+                    <button class="btn" id="close-guild-btn">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen: Crafting -->
+        <div id="crafting-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>⚒️ Crafting</h2>
+                <div class="crafting-grid">
+                    <div class="recipes-list">
+                        <div class="crafting-toolbar">
+                            <h3>Recipes</h3>
+                            <label class="toggle-control">
+                                <input type="checkbox" id="sort-available-toggle">
+                                <span class="toggle-label">Sort by available recipes</span>
+                            </label>
+                        </div>
+                        <div id="recipes-list"></div>
+                    </div>
+                    <div class="crafting-info">
+                        <h3>Craft Item</h3>
+                        <div id="craft-details"></div>
+                        <button class="btn" id="craft-btn">Craft</button>
+                    </div>
+                </div>
+                <button class="btn" id="close-crafting-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Screen: Achievements -->
+        <div id="achievements-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>🏆 Achievements</h2>
+                <div id="achievements-list"></div>
+                <button class="btn" id="close-achievements-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Screen: Pet -->
+        <div id="pet-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>🐕 Companion</h2>
+                <div id="pet-info"></div>
+                <h3>Available Pets:</h3>
+                <div id="pets-list"></div>
+                <button class="btn" id="close-pet-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Screen: Enchantments -->
+        <div id="enchantments-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>✨ Enchantments</h2>
+                <div class="crafting-grid">
+                    <div class="enchantments-list">
+                        <h3>Available Enchantments</h3>
+                        <div id="enchantments-list"></div>
+                    </div>
+                    <div class="enchantment-info">
+                        <h3>Enchant Item</h3>
+                        <div id="enchantment-details"></div>
+                        <button class="btn" id="enchant-btn">Enchant</button>
+                    </div>
+                </div>
+                <button class="btn" id="close-enchantments-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Screen: Classes -->
+        <div id="classes-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>⚔️ Classes</h2>
+                <div class="classes-grid">
+                    <div class="current-class">
+                        <h3>Current Class</h3>
+                        <div id="current-class-info"></div>
+                        <div style="margin-top: 15px;">
+                            <h4 style="color: #ffd700;">Prestige Level: <span id="prestige-level"></span></h4>
+                            <button class="btn" id="prestige-btn" style="margin-top: 10px;">Prestige (Level 20+)</button>
+                        </div>
+                    </div>
+                    <div class="available-classes">
+                        <h3>Available Classes</h3>
+                        <div id="available-classes-list"></div>
+                    </div>
+                </div>
+                <button class="btn" id="close-classes-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2 id="game-over-text"></h2>
+                <p id="final-stats"></p>
+                <button class="btn" id="main-menu-btn">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game-data.js"></script>
+    <script src="world-simulation.js"></script>
+    <script src="story.js"></script>
+</body>
+</html>

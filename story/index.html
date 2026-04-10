@@ -15,7 +15,7 @@
                 <h1>Chronicles of Aetheria</h1>
                 <p>A Living World Awaits</p>
                 
-                <div id="login-form">
+                <div id="login-form"> 
                     <h2>Login</h2>
                     <div class="form-group">
                         <label for="login-username">Username:</label>
@@ -149,9 +149,14 @@
                 <div class="character-info">
                     <h2 id="player-name"></h2>
                     <p id="player-stats"></p>
+                    <div class="player-exp">
+                        <div class="exp-bar"><div id="exp-bar-fill"></div></div>
+                        <p id="exp-text"></p>
+                    </div>
                 </div>
                 <div class="game-menu">
                     <button class="btn-small" id="inventory-btn">Inventory</button>
+                    <button class="btn-small" id="stats-btn">⚡ Stats</button>
                     <button class="btn-small" id="quests-btn">Quests</button>
                     <button class="btn-small" id="guild-btn">Guild</button>
                     <button class="btn-small" id="crafting-btn">Craft</button>
@@ -180,11 +185,17 @@
                 </div>
             </div>
 
+            <div id="reward-notice" class="reward-notice hidden">
+                <p id="pending-reward-text"></p>
+                <button class="btn btn-primary" id="claim-pending-reward-btn">Claim Pending Reward</button>
+            </div>
+
             <div class="game-content">
                 <!-- Location View -->
                 <div id="location-view" class="location">
                     <h3 id="location-name"></h3>
                     <p id="location-description"></p>
+                    <p id="location-note" class="location-note"></p>
                     
                     <div class="npcs-section">
                         <h4>NPCs & Enemies</h4>
@@ -199,6 +210,9 @@
                     <div class="exits-section">
                         <h4>Exits</h4>
                         <div id="exits-list"></div>
+                    </div>
+                    <div class="location-actions">
+                        <button class="btn btn-secondary hidden" id="open-quest-board-btn">Open Mission Board</button>
                     </div>
                 </div>
 
@@ -231,6 +245,112 @@
                         <button class="btn" id="flee-btn">Flee</button>
                     </div>
                 </div>
+
+                <div id="combat-victory-modal" class="screen modal-screen hidden">
+                    <div class="modal-content">
+                        <h2 id="combat-victory-title">Enemy Defeated</h2>
+                        <p id="combat-victory-description">You can claim your spoils from the fallen enemy.</p>
+                        <div id="combat-rewards-summary" class="reward-summary"></div>
+                        <button class="btn btn-primary" id="claim-reward-btn">Claim Reward</button>
+                        <button class="btn btn-secondary" id="dismiss-reward-btn">Dismiss</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen: Character Stats -->
+        <div id="stats-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>⚔️ Character Stats</h2>
+                <div class="stats-grid">
+                    <!-- Primary Stats -->
+                    <div class="stats-section">
+                        <h3>Primary Stats</h3>
+                        <div class="stat-row">
+                            <span class="stat-label">💪 Strength</span>
+                            <span class="stat-value" id="stat-strength"></span>
+                            <span class="stat-bonus" id="stat-strength-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">❤️‍🔥 Stamina</span>
+                            <span class="stat-value" id="stat-stamina"></span>
+                            <span class="stat-bonus" id="stat-stamina-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">🧠 Intelligence</span>
+                            <span class="stat-value" id="stat-intelligence"></span>
+                            <span class="stat-bonus" id="stat-intelligence-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">⚡ Speed</span>
+                            <span class="stat-value" id="stat-speed"></span>
+                            <span class="stat-bonus" id="stat-speed-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">🎯 Agility</span>
+                            <span class="stat-value" id="stat-agility"></span>
+                            <span class="stat-bonus" id="stat-agility-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">🍀 Luck</span>
+                            <span class="stat-value" id="stat-luck"></span>
+                            <span class="stat-bonus" id="stat-luck-bonus"></span>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Stats -->
+                    <div class="stats-section">
+                        <h3>Secondary Stats</h3>
+                        <div class="stat-row">
+                            <span class="stat-label">💚 Vitality</span>
+                            <span class="stat-value" id="stat-vitality"></span>
+                            <span class="stat-bonus" id="stat-vitality-bonus"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">📚 Wisdom</span>
+                            <span class="stat-value" id="stat-wisdom"></span>
+                            <span class="stat-bonus" id="stat-wisdom-bonus"></span>
+                        </div>
+                    </div>
+
+                    <!-- Derived Stats -->
+                    <div class="stats-section">
+                        <h3>Derived Stats</h3>
+                        <div class="stat-row">
+                            <span class="stat-label">❤️ Health</span>
+                            <span class="stat-value" id="stat-hp"></span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">💙 Mana</span>
+                            <span class="stat-value" id="stat-mp"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">⚔️ Damage</span>
+                            <span class="stat-value" id="stat-damage"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">🛡️ Defense</span>
+                            <span class="stat-value" id="stat-defense"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">💥 Crit Chance</span>
+                            <span class="stat-value" id="stat-crit-chance"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">🏃 Attack Speed</span>
+                            <span class="stat-value" id="stat-attack-speed"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">🚫 Dodge Chance</span>
+                            <span class="stat-value" id="stat-dodge-chance"></span>
+                        </div>
+                        <div class="stat-row-detailed">
+                            <span class="stat-label">✨ Magic Damage</span>
+                            <span class="stat-value" id="stat-magic-damage"></span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn" id="close-stats-btn">Close</button>
             </div>
         </div>
 
@@ -258,6 +378,15 @@
                 <h2>Quests</h2>
                 <div id="quests-list"></div>
                 <button class="btn" id="close-quests-btn">Close</button>
+            </div>
+        </div>
+
+        <!-- Screen: Quest Board -->
+        <div id="quest-board-screen" class="screen modal-screen hidden">
+            <div class="modal-content">
+                <h2>Quest Board</h2>
+                <div id="quest-board-list"></div>
+                <button class="btn" id="close-quest-board-btn">Close</button>
             </div>
         </div>
 
@@ -291,16 +420,27 @@
         <div id="shop-screen" class="screen modal-screen hidden">
             <div class="modal-content">
                 <h2 id="shop-name"></h2>
-                <div class="shop-grid">
-                    <div class="shop-items">
-                        <h3>Buy</h3>
-                        <div id="shop-items-list"></div>
-                    </div>
-                    <div class="player-gold">
-                        <p>Gold: <span id="player-gold"></span></p>
-                    </div>
+                <div class="shop-info">
+                    <p>Gold: <span id="shop-player-gold" class="player-gold-amount">0</span></p>
                 </div>
-                <button class="btn" id="close-shop-btn">Close</button>
+                
+                <!-- Shop Tabs -->
+                <div class="shop-tabs">
+                    <button class="shop-tab-btn active" data-tab="buy">🛍️ Buy</button>
+                    <button class="shop-tab-btn" data-tab="sell">💰 Sell</button>
+                </div>
+                
+                <!-- Buy Tab -->
+                <div id="shop-buy-tab" class="shop-tab-content active">
+                    <div id="shop-items-list" class="shop-items-grid"></div>
+                </div>
+                
+                <!-- Sell Tab -->
+                <div id="shop-sell-tab" class="shop-tab-content hidden">
+                    <div id="shop-sell-items-list" class="shop-items-grid"></div>
+                </div>
+                
+                <button class="btn btn-primary" id="close-shop-btn">Close Shop</button>
             </div>
         </div>
 
@@ -383,7 +523,13 @@
                 <h2>⚒️ Crafting</h2>
                 <div class="crafting-grid">
                     <div class="recipes-list">
-                        <h3>Recipes</h3>
+                        <div class="crafting-toolbar">
+                            <h3>Recipes</h3>
+                            <label class="toggle-control">
+                                <input type="checkbox" id="sort-available-toggle">
+                                <span class="toggle-label">Sort by available recipes</span>
+                            </label>
+                        </div>
                         <div id="recipes-list"></div>
                     </div>
                     <div class="crafting-info">
@@ -469,6 +615,7 @@
 
     <script src="game-data.js"></script>
     <script src="world-simulation.js"></script>
+    <script type="module" src="weapon.js"></script>
     <script src="story.js"></script>
 </body>
 </html>

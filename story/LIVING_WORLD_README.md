@@ -53,7 +53,7 @@ When you start the game, you'll see:
 ### How to Use
 
 #### Playing WITHOUT Server
-1. Open `story.html` in your browser
+1. Open `index.html` in your browser
 2. Enter any username (no password needed in local mode)
 3. Create your character and play
 4. Progress saves locally to your browser
@@ -67,7 +67,7 @@ npm install
 npm start
 ```
 
-Then visit: `http://localhost:3000/story.html`
+Then visit: `http://localhost:3000/index.html`
 
 **Features**:
 - ✅ Account authentication with passwords
@@ -160,7 +160,7 @@ GET /api/leaderboard
 
 ### Without Server (Default)
 ```
-1. Open story.html
+1. Open index.html
 2. Enter username (any name)
 3. Create character
 4. Play!
@@ -170,7 +170,7 @@ GET /api/leaderboard
 ```
 1. npm install
 2. npm start
-3. Visit http://localhost:3000/story.html
+3. Visit http://localhost:3000/index.html
 4. Register account
 5. Create character
 6. Play!

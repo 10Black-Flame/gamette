@@ -950,7 +950,7 @@ app.listen(PORT, () => {
     console.log(`\n╔═══════════════════════════════════════════╗`);
     console.log(`║  Chronicles of Aetheria Server Running   ║`);
     console.log(`║  Server: http://localhost:${PORT}            ║`);
-    console.log(`║  Game: http://localhost:${PORT}/story.html    ║`);
+    console.log(`║  Game: http://localhost:${PORT}/index.html    ║`);
     console.log(`╚═══════════════════════════════════════════╝\n`);
 });
 

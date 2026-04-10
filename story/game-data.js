@@ -10,6 +10,14 @@ const GAME_DATA = {
             baseAttack: 15,
             baseDefense: 8,
             baseSpeed: 5,
+            baseStrength: 16,
+            baseStamina: 15,
+            baseIntelligence: 8,
+            baseSpeed: 10,
+            baseAgility: 10,
+            baseLuck: 9,
+            baseVitality: 12,
+            baseWisdom: 8,
             description: 'A strong melee fighter with high durability',
             abilities: ['power_strike', 'shield_bash', 'battle_cry'],
             growth: { hp: 8, mp: 1, attack: 3, defense: 2, speed: 1 }
@@ -21,6 +29,14 @@ const GAME_DATA = {
             baseAttack: 8,
             baseDefense: 3,
             baseSpeed: 8,
+            baseStrength: 9,
+            baseStamina: 10,
+            baseIntelligence: 18,
+            baseSpeed: 12,
+            baseAgility: 11,
+            baseLuck: 10,
+            baseVitality: 8,
+            baseWisdom: 16,
             description: 'Master of elemental magic',
             abilities: ['fireball', 'ice_shield', 'teleport'],
             growth: { hp: 4, mp: 5, attack: 1, defense: 1, speed: 2 }
@@ -32,6 +48,14 @@ const GAME_DATA = {
             baseAttack: 14,
             baseDefense: 5,
             baseSpeed: 12,
+            baseStrength: 13,
+            baseStamina: 11,
+            baseIntelligence: 10,
+            baseSpeed: 16,
+            baseAgility: 17,
+            baseLuck: 12,
+            baseVitality: 9,
+            baseWisdom: 9,
             description: 'Swift and deadly assassin',
             abilities: ['backstab', 'poison_dart', 'smoke_bomb'],
             growth: { hp: 5, mp: 1, attack: 2, defense: 1, speed: 3 }
@@ -43,6 +67,14 @@ const GAME_DATA = {
             baseAttack: 10,
             baseDefense: 10,
             baseSpeed: 6,
+            baseStrength: 11,
+            baseStamina: 13,
+            baseIntelligence: 14,
+            baseSpeed: 9,
+            baseAgility: 10,
+            baseLuck: 11,
+            baseVitality: 13,
+            baseWisdom: 15,
             description: 'Holy healer with protective spells',
             abilities: ['heal', 'divine_shield', 'purify'],
             growth: { hp: 6, mp: 3, attack: 1, defense: 2, speed: 1 }
@@ -140,7 +172,7 @@ const GAME_DATA = {
             id: 'village',
             name: 'Aldermere Village',
             description: 'A peaceful village nestled in a green valley. Smoke rises from chimneys and the aroma of freshly baked bread fills the air. The village square has an inn, a blacksmith, an alchemist shop, and a small temple. Children play in the streets while merchants hawk their wares.',
-            npcs: ['innkeeper', 'blacksmith', 'alchemist', 'priest', 'merchant', 'guard', 'farmer', 'bard', 'mayor'],
+            npcs: ['innkeeper', 'blacksmith', 'alchemist', 'priest', 'merchant', 'guard', 'farmer', 'bard', 'mayor', 'quest_board'],
             items: ['bread', 'apple'],
             exits: {
                 forest: 'Head north to Dark Forest',
@@ -177,6 +209,7 @@ const GAME_DATA = {
             npcs: ['herbalist', 'hunter'],
             enemies: ['goblin', 'goblin', 'wolf'],
             items: ['herb', 'mushroom'],
+            wildPets: ['wolf', 'sprite'],
             exits: { village: 'Return to village', mountains: 'Head east to Rocky Mountains', cave: 'Enter dark cave' }
         },
         cave: {
@@ -195,6 +228,7 @@ const GAME_DATA = {
             npcs: [],
             enemies: ['wolf', 'wolf', 'mountain_troll'],
             items: ['ore', 'silver_ore'],
+            wildPets: ['golem'],
             exits: { village: 'Return to village', forest: 'Return to forest', tower: 'Climb to Sky Tower' }
         },
         tower: {
@@ -204,6 +238,7 @@ const GAME_DATA = {
             npcs: [],
             enemies: ['arcane_golem', 'shadow_mage'],
             items: ['staff', 'mana_crystal'],
+            wildPets: ['phoenix'],
             exits: { mountains: 'Descend to mountains' }
         },
         castle: {
@@ -222,6 +257,7 @@ const GAME_DATA = {
             npcs: ['thief'],
             enemies: ['shadow_beast', 'shadow_beast', 'shadow_lord'],
             items: ['treasure_chest', 'ancient_key'],
+            wildPets: ['shadow_cat'],
             exits: { castle: 'Ascend to castle' }
         }
     },
@@ -266,7 +302,14 @@ const GAME_DATA = {
             type: 'quest_giver',
             quest: 'defeat_shadow_lord',
             personality: 'wise',
-            intelligence: 'high'
+            intelligence: 'high',
+            specialInteraction: {
+                type: 'class_unlock',
+                classId: 'paladin',
+                requirements: { level: 10, classType: 'warrior' },
+                dialogue: 'Ah, a warrior with a pure heart! The path of the Paladin awaits you. Will you embrace the holy light?',
+                reward: 'paladin_oath'
+            }
         },
         // Additional Characters
         librarian: {
@@ -277,7 +320,14 @@ const GAME_DATA = {
             type: 'quest_giver',
             quest: 'find_ancient_tome',
             personality: 'scholarly',
-            intelligence: 'genius'
+            intelligence: 'genius',
+            specialInteraction: {
+                type: 'item_offer',
+                itemId: 'spell_book',
+                requirements: { level: 5 },
+                dialogue: 'I see you have a thirst for knowledge. This ancient spell book has been gathering dust. Would you like to take it?',
+                reward: 'spell_book'
+            }
         },
         merchant: {
             id: 'merchant',
@@ -378,6 +428,15 @@ const GAME_DATA = {
             quest: 'translate_ancient_text',
             personality: 'analytical',
             intelligence: 'genius'
+        },
+        quest_board: {
+            id: 'quest_board',
+            name: 'Quest Board',
+            description: 'A weathered wooden board nailed to the village notice post, covered in pinned parchments.',
+            dialogue: 'Various quests and tasks are posted here for adventurers willing to help the village.',
+            type: 'quest_board',
+            personality: 'neutral',
+            intelligence: 'none'
         }
     },
 
@@ -386,6 +445,7 @@ const GAME_DATA = {
         goblin: {
             id: 'goblin',
             name: 'Goblin',
+            level: 1,
             hp: 20,
             mp: 5,
             attack: 5,
@@ -398,6 +458,7 @@ const GAME_DATA = {
         goblinWarrior: {
             id: 'goblinWarrior',
             name: 'Goblin Warrior',
+            level: 2,
             hp: 35,
             mp: 5,
             attack: 8,
@@ -410,6 +471,7 @@ const GAME_DATA = {
         wolf: {
             id: 'wolf',
             name: 'Wolf',
+            level: 2,
             hp: 30,
             mp: 0,
             attack: 7,
@@ -422,6 +484,7 @@ const GAME_DATA = {
         mountain_troll: {
             id: 'mountain_troll',
             name: 'Mountain Troll',
+            level: 4,
             hp: 60,
             mp: 10,
             attack: 12,
@@ -434,6 +497,7 @@ const GAME_DATA = {
         skeleton: {
             id: 'skeleton',
             name: 'Skeleton',
+            level: 2,
             hp: 25,
             mp: 15,
             attack: 6,
@@ -446,6 +510,7 @@ const GAME_DATA = {
         dark_knight: {
             id: 'dark_knight',
             name: 'Dark Knight',
+            level: 5,
             hp: 80,
             mp: 20,
             attack: 15,
@@ -458,6 +523,7 @@ const GAME_DATA = {
         arcane_golem: {
             id: 'arcane_golem',
             name: 'Arcane Golem',
+            level: 6,
             hp: 70,
             mp: 30,
             attack: 10,
@@ -470,6 +536,7 @@ const GAME_DATA = {
         shadow_mage: {
             id: 'shadow_mage',
             name: 'Shadow Mage',
+            level: 6,
             hp: 50,
             mp: 40,
             attack: 12,
@@ -482,6 +549,7 @@ const GAME_DATA = {
         shadow_beast: {
             id: 'shadow_beast',
             name: 'Shadow Beast',
+            level: 5,
             hp: 55,
             mp: 20,
             attack: 11,
@@ -494,6 +562,7 @@ const GAME_DATA = {
         shadow_lord: {
             id: 'shadow_lord',
             name: 'Shadow Lord',
+            level: 10,
             hp: 150,
             mp: 60,
             attack: 20,
@@ -502,6 +571,348 @@ const GAME_DATA = {
             exp: 1000,
             gold: 500,
             drops: ['lord_crown', 'ancient_staff', 'legendary_amulet']
+        }
+    },
+
+    // Regional Mob Pools & Dynamic Spawning System
+    regionMobPools: {
+        forest: {
+            name: 'Dark Forest',
+            commonMobs: ['goblin', 'wolf'],
+            eliteMobs: ['goblin_sentinel', 'dire_wolf'],
+            miniBoss: 'forest_warlord',
+            regionalBoss: 'forest_ancient',
+            killThresholds: { elite: 8, miniBoss: 15, boss: 25 }
+        },
+        cave: {
+            name: 'Goblin Cavern',
+            commonMobs: ['goblin', 'goblinWarrior'],
+            eliteMobs: ['goblin_captain', 'goblin_shaman'],
+            miniBoss: 'goblin_king',
+            regionalBoss: 'cave_tyrant',
+            killThresholds: { elite: 8, miniBoss: 16, boss: 28 }
+        },
+        mountains: {
+            name: 'Rocky Mountains',
+            commonMobs: ['wolf', 'mountain_troll'],
+            eliteMobs: ['dire_wolf', 'ice_troll'],
+            miniBoss: 'mountain_giant',
+            regionalBoss: 'yeti_lord',
+            killThresholds: { elite: 10, miniBoss: 18, boss: 30 }
+        },
+        tower: {
+            name: 'Sky Tower',
+            commonMobs: ['arcane_golem', 'shadow_mage'],
+            eliteMobs: ['arcane_guardian', 'shadow_sorcerer'],
+            miniBoss: 'arcane_lord',
+            regionalBoss: 'tower_sentinel',
+            killThresholds: { elite: 7, miniBoss: 14, boss: 22 }
+        },
+        castle: {
+            name: 'Ruined Castle',
+            commonMobs: ['skeleton', 'dark_knight'],
+            eliteMobs: ['cursed_knight', 'death_knight'],
+            miniBoss: 'castle_commander',
+            regionalBoss: 'dark_overlord',
+            killThresholds: { elite: 9, miniBoss: 17, boss: 26 }
+        },
+        dungeon: {
+            name: 'Castle Dungeon',
+            commonMobs: ['shadow_beast', 'skeleton'],
+            eliteMobs: ['shadow_demon', 'death_warden'],
+            miniBoss: 'shadow_prince',
+            regionalBoss: 'shadow_lord',
+            killThresholds: { elite: 10, miniBoss: 19, boss: 32 }
+        }
+    },
+
+    // Elite mob variants (stat multipliers and rewards)
+    eliteMobVariants: {
+        goblin_sentinel: {
+            baseId: 'goblin',
+            name: 'Goblin Sentinel',
+            statMultiplier: 1.4,
+            expMultiplier: 2.2,
+            goldMultiplier: 1.8,
+            elite: true
+        },
+        dire_wolf: {
+            baseId: 'wolf',
+            name: 'Dire Wolf',
+            statMultiplier: 1.5,
+            expMultiplier: 2.3,
+            goldMultiplier: 1.9,
+            elite: true
+        },
+        goblin_captain: {
+            baseId: 'goblinWarrior',
+            name: 'Goblin Captain',
+            statMultiplier: 1.45,
+            expMultiplier: 2.4,
+            goldMultiplier: 2,
+            elite: true
+        },
+        goblin_shaman: {
+            baseId: 'goblin',
+            name: 'Goblin Shaman',
+            statMultiplier: 1.35,
+            expMultiplier: 2.1,
+            goldMultiplier: 1.9,
+            elite: true
+        },
+        ice_troll: {
+            baseId: 'mountain_troll',
+            name: 'Ice Troll',
+            statMultiplier: 1.6,
+            expMultiplier: 2.8,
+            goldMultiplier: 2.2,
+            elite: true
+        },
+        arcane_guardian: {
+            baseId: 'arcane_golem',
+            name: 'Arcane Guardian',
+            statMultiplier: 1.55,
+            expMultiplier: 2.6,
+            goldMultiplier: 2.1,
+            elite: true
+        },
+        shadow_sorcerer: {
+            baseId: 'shadow_mage',
+            name: 'Shadow Sorcerer',
+            statMultiplier: 1.5,
+            expMultiplier: 2.5,
+            goldMultiplier: 2,
+            elite: true
+        },
+        cursed_knight: {
+            baseId: 'dark_knight',
+            name: 'Cursed Knight',
+            statMultiplier: 1.5,
+            expMultiplier: 2.5,
+            goldMultiplier: 2.1,
+            elite: true
+        },
+        death_knight: {
+            baseId: 'skeleton',
+            name: 'Death Knight',
+            statMultiplier: 1.6,
+            expMultiplier: 2.7,
+            goldMultiplier: 2.2,
+            elite: true
+        },
+        shadow_demon: {
+            baseId: 'shadow_beast',
+            name: 'Shadow Demon',
+            statMultiplier: 1.65,
+            expMultiplier: 2.9,
+            goldMultiplier: 2.3,
+            elite: true
+        },
+        death_warden: {
+            baseId: 'skeleton',
+            name: 'Death Warden',
+            statMultiplier: 1.55,
+            expMultiplier: 2.6,
+            goldMultiplier: 2.1,
+            elite: true
+        }
+    },
+
+    // Mini-bosses
+    miniBosses: {
+        forest_warlord: {
+            id: 'forest_warlord',
+            name: 'Forest Warlord',
+            level: 4,
+            hp: 80,
+            mp: 20,
+            attack: 14,
+            defense: 7,
+            speed: 7,
+            exp: 450,
+            gold: 200,
+            drops: ['iron_ore', 'wolf_fur', 'skill_tome'],
+            miniBoss: true
+        },
+        goblin_king: {
+            id: 'goblin_king',
+            name: 'Goblin King',
+            level: 5,
+            hp: 95,
+            mp: 15,
+            attack: 16,
+            defense: 8,
+            speed: 6,
+            exp: 520,
+            gold: 250,
+            drops: ['gold', 'iron_ore', 'goblin_crown'],
+            miniBoss: true
+        },
+        mountain_giant: {
+            id: 'mountain_giant',
+            name: 'Mountain Giant',
+            level: 6,
+            hp: 110,
+            mp: 25,
+            attack: 18,
+            defense: 9,
+            speed: 4,
+            exp: 610,
+            gold: 300,
+            drops: ['ore', 'troll_bone', 'giant_fist'],
+            miniBoss: true
+        },
+        arcane_lord: {
+            id: 'arcane_lord',
+            name: 'Arcane Lord',
+            level: 7,
+            hp: 100,
+            mp: 50,
+            attack: 16,
+            defense: 8,
+            speed: 9,
+            exp: 680,
+            gold: 320,
+            drops: ['mana_crystal', 'spell_book', 'arcane_core'],
+            miniBoss: true
+        },
+        castle_commander: {
+            id: 'castle_commander',
+            name: 'Castle Commander',
+            level: 7,
+            hp: 105,
+            mp: 30,
+            attack: 17,
+            defense: 11,
+            speed: 7,
+            exp: 650,
+            gold: 310,
+            drops: ['dark_armor', 'cursed_sword', 'commander_insignia'],
+            miniBoss: true
+        },
+        shadow_prince: {
+            id: 'shadow_prince',
+            name: 'Shadow Prince',
+            level: 8,
+            hp: 120,
+            mp: 45,
+            attack: 18,
+            defense: 10,
+            speed: 9,
+            exp: 750,
+            gold: 350,
+            drops: ['shadow_essence', 'dark_gem', 'prince_crown'],
+            miniBoss: true
+        }
+    },
+
+    // Regional Bosses
+    regionalBosses: {
+        forest_ancient: {
+            id: 'forest_ancient',
+            name: 'Ancient Forest Spirit',
+            level: 8,
+            hp: 130,
+            mp: 40,
+            attack: 17,
+            defense: 9,
+            speed: 8,
+            exp: 800,
+            gold: 400,
+            drops: ['lord_crown', 'forest_staff', 'ancient_amulet'],
+            boss: true
+        },
+        cave_tyrant: {
+            id: 'cave_tyrant',
+            name: 'Tyrant of the Caverns',
+            level: 9,
+            hp: 140,
+            mp: 35,
+            attack: 19,
+            defense: 10,
+            speed: 6,
+            exp: 900,
+            gold: 450,
+            drops: ['lord_crown', 'ancient_staff', 'legendary_amulet'],
+            boss: true
+        },
+        yeti_lord: {
+            id: 'yeti_lord',
+            name: 'Yeti Lord',
+            level: 9,
+            hp: 150,
+            mp: 30,
+            attack: 20,
+            defense: 11,
+            speed: 7,
+            exp: 950,
+            gold: 500,
+            drops: ['legendary_amulet', 'ice_core', 'yeti_pelt'],
+            boss: true
+        },
+        tower_sentinel: {
+            id: 'tower_sentinel',
+            name: 'Tower Sentinel',
+            level: 9,
+            hp: 135,
+            mp: 60,
+            attack: 18,
+            defense: 12,
+            speed: 10,
+            exp: 920,
+            gold: 480,
+            drops: ['ancient_staff', 'mana_crystal', 'arcane_scepter'],
+            boss: true
+        },
+        dark_overlord: {
+            id: 'dark_overlord',
+            name: 'Dark Overlord',
+            level: 10,
+            hp: 145,
+            mp: 50,
+            attack: 21,
+            defense: 13,
+            speed: 8,
+            exp: 980,
+            gold: 520,
+            drops: ['lord_crown', 'ancient_staff', 'legendary_amulet'],
+            boss: true
+        }
+    },
+
+    // Shops
+    shops: {
+        general_store: {
+            id: 'general_store',
+            name: 'General Store',
+            keeper: 'merchant',
+            baseInventory: ['herb', 'mushroom', 'meat', 'iron_ore', 'bone', 'wolf_fur'],
+            rareInventory: ['mana_crystal', 'shadow_essence', 'dark_gem', 'mechanical_part'],
+            rareChance: 0.15 // 15% chance for rare items to appear
+        },
+        blacksmith_shop: {
+            id: 'blacksmith_shop',
+            name: 'Blacksmith\'s Forge',
+            keeper: 'blacksmith',
+            baseInventory: ['sword', 'shield', 'iron_ore', 'ore', 'silver_ore', 'troll_bone'],
+            rareInventory: ['cursed_sword', 'dark_armor', 'giant_fist', 'forest_staff', 'arcane_scepter'],
+            rareChance: 0.12
+        },
+        alchemist_shop: {
+            id: 'alchemist_shop',
+            name: 'Alchemy Emporium',
+            keeper: 'alchemist',
+            baseInventory: ['herb', 'mushroom', 'mana_potion', 'mana_crystal', 'shadow_essence'],
+            rareInventory: ['ancient_staff', 'legendary_amulet', 'arcane_core', 'ice_core'],
+            rareChance: 0.18
+        },
+        treasure_merchant: {
+            id: 'treasure_merchant',
+            name: 'Curiosity Merchant',
+            keeper: 'merchant',
+            baseInventory: ['treasure_chest', 'spell_book', 'ancient_scroll', 'spell_scroll'],
+            rareInventory: ['lord_crown', 'ancient_staff', 'legendary_amulet', 'prince_crown', 'commander_insignia'],
+            rareChance: 0.10
         }
     },
 
@@ -550,7 +961,17 @@ const GAME_DATA = {
         dark_gem: { id: 'dark_gem', name: 'Dark Gem', type: 'material', gold: 150 },
         lord_crown: { id: 'lord_crown', name: 'Crown of Shadows', type: 'equipment', defense: 15, gold: 500 },
         ancient_staff: { id: 'ancient_staff', name: 'Ancient Staff', type: 'weapon', attack: 20, mp: 40, gold: 600 },
-        legendary_amulet: { id: 'legendary_amulet', name: 'Legendary Amulet', type: 'equipment', defense: 10, gold: 700 }
+        legendary_amulet: { id: 'legendary_amulet', name: 'Legendary Amulet', type: 'equipment', defense: 10, gold: 700 },
+        skill_tome: { id: 'skill_tome', name: 'Skill Tome', type: 'quest_item', gold: 150 },
+        goblin_crown: { id: 'goblin_crown', name: 'Goblin Crown', type: 'equipment', defense: 3, gold: 80 },
+        giant_fist: { id: 'giant_fist', name: 'Giant\'s Fist', type: 'weapon', attack: 18, gold: 200 },
+        arcane_core: { id: 'arcane_core', name: 'Arcane Core', type: 'material', gold: 250 },
+        commander_insignia: { id: 'commander_insignia', name: 'Commander\'s Insignia', type: 'equipment', defense: 5, gold: 120 },
+        prince_crown: { id: 'prince_crown', name: 'Prince\'s Crown', type: 'equipment', defense: 8, gold: 300 },
+        forest_staff: { id: 'forest_staff', name: 'Staff of the Forest', type: 'weapon', attack: 17, mp: 30, gold: 400 },
+        ice_core: { id: 'ice_core', name: 'Ice Core', type: 'material', gold: 200 },
+        yeti_pelt: { id: 'yeti_pelt', name: 'Yeti Pelt', type: 'material', gold: 180 },
+        arcane_scepter: { id: 'arcane_scepter', name: 'Arcane Scepter', type: 'weapon', attack: 19, mp: 35, gold: 450 }
     },
 
     // Quests
@@ -560,6 +981,8 @@ const GAME_DATA = {
             title: 'Explore the Cave',
             description: 'There are goblins in the cave near the forest. Investigate and clear them out.',
             reward: 500,
+            expReward: 200,
+            autoCompleteOnKill: true,
             required: false,
             startLocation: 'village'
         },
@@ -568,6 +991,8 @@ const GAME_DATA = {
             title: 'Slay the Mountain Troll',
             description: 'A dangerous troll terrorizes the mountain pass. The village needs your help to defeat it.',
             reward: 1000,
+            expReward: 350,
+            autoCompleteOnKill: true,
             required: false,
             startLocation: 'mountains'
         },
@@ -576,8 +1001,11 @@ const GAME_DATA = {
             title: 'Defeat the Shadow Lord',
             description: 'Evil lurks in the castle dungeon. Brother Isaiah believes only a true hero can stop it.',
             reward: 2000,
+            expReward: 1000,
+            autoCompleteOnKill: true,
             required: true,
-            startLocation: 'dungeon'
+            startLocation: 'dungeon',
+            type: 'system'
         },
         find_ancient_tome: {
             id: 'find_ancient_tome',
@@ -585,7 +1013,8 @@ const GAME_DATA = {
             description: 'Archmage Eldrin Voss needs a rare ancient tome that was stolen from the library. It might be in the goblin cave.',
             reward: 800,
             required: false,
-            startLocation: 'library'
+            startLocation: 'library',
+            type: 'system'
         },
         test_invention: {
             id: 'test_invention',
@@ -616,6 +1045,8 @@ const GAME_DATA = {
             title: 'Clear the Goblin Camp',
             description: 'Captain Thorne reports increased goblin activity near the forest. Clear them out to protect the village.',
             reward: 700,
+            expReward: 250,
+            autoCompleteOnKill: true,
             required: false,
             startLocation: 'village'
         }
@@ -956,17 +1387,105 @@ const GAME_DATA = {
         { id: 'master_crafter', name: 'Master Crafter', description: 'Craft 10 items', reward: 1500 },
         { id: 'shadow_lord_victory', name: 'World Savior', description: 'Defeat the Shadow Lord', reward: 3000 },
         { id: 'perfect_guild', name: 'Guild Master', description: 'Join a guild and reach level 10', reward: 2000 },
-        { id: 'unlock_hidden_class', name: 'Secret Revealed', description: 'Unlock a hidden class', reward: 1000 }
+        { id: 'unlock_hidden_class', name: 'Secret Revealed', description: 'Unlock a hidden class', reward: 1000 },
+        { id: 'first_quest', name: 'Quest Beginner', description: 'Complete your first quest', reward: 200 },
+        { id: 'pet_catcher', name: 'Pet Catcher', description: 'Catch your first pet', reward: 300 },
+        { id: 'bookworm', name: 'Bookworm', description: 'Read 5 books', reward: 400 },
+        { id: 'merchant', name: 'Merchant', description: 'Earn 10,000 gold', reward: 1000 },
+        { id: 'spell_master', name: 'Spell Master', description: 'Cast 100 spells', reward: 800 },
+        { id: 'survivor', name: 'Survivor', description: 'Survive 50 combats without fleeing', reward: 600 },
+        { id: 'guild_leader', name: 'Guild Leader', description: 'Create your own guild', reward: 1500 },
+        { id: 'enchantment_expert', name: 'Enchantment Expert', description: 'Apply 10 enchantments', reward: 700 },
+        { id: 'dungeon_crawler', name: 'Dungeon Crawler', description: 'Clear 5 dungeons', reward: 1200 },
+        { id: 'prestige_achiever', name: 'Prestige Achiever', description: 'Reach prestige level 1', reward: 5000 }
     ],
 
     // Pet Companions
     pets: [
-        { id: 'wolf', name: 'Wolf', rarity: 'common', bonus: { attack: 5, speed: 2 }, description: 'Loyal wolf companion' },
-        { id: 'phoenix', name: 'Phoenix', rarity: 'rare', bonus: { attack: 8, maxHP: 30, fire_resist: 0.2 }, description: 'Legendary fire bird' },
-        { id: 'dragon', name: 'Dragon', rarity: 'epic', bonus: { attack: 15, defense: 10, speed: 5 }, description: 'Most powerful companion' },
-        { id: 'sprite', name: 'Fairy Sprite', rarity: 'rare', bonus: { mp: 20, magic_damage: 0.1 }, description: 'Magical fairy ally' },
-        { id: 'golem', name: 'Stone Golem', rarity: 'rare', bonus: { defense: 15, maxHP: 50 }, description: 'Unbreakable defender' },
-        { id: 'shadow_cat', name: 'Shadow Cat', rarity: 'epic', bonus: { speed: 8, stealth: 0.5, critical: 0.1 }, description: 'Silent assassin' }
+        { 
+            id: 'wolf', 
+            name: 'Wolf', 
+            specie: 'Canine', 
+            grade: 'Common', 
+            hp: 50, 
+            mp: 20, 
+            attack: 10, 
+            defense: 5, 
+            speed: 15, 
+            rarity: 'common', 
+            bonus: { attack: 5, speed: 2 }, 
+            description: 'Loyal wolf companion' 
+        },
+        { 
+            id: 'phoenix', 
+            name: 'Phoenix', 
+            specie: 'Avian', 
+            grade: 'Rare', 
+            hp: 80, 
+            mp: 60, 
+            attack: 15, 
+            defense: 10, 
+            speed: 20, 
+            rarity: 'rare', 
+            bonus: { attack: 8, maxHP: 30, fire_resist: 0.2 }, 
+            description: 'Legendary fire bird' 
+        },
+        { 
+            id: 'dragon', 
+            name: 'Dragon', 
+            specie: 'Draconic', 
+            grade: 'Epic', 
+            hp: 150, 
+            mp: 100, 
+            attack: 25, 
+            defense: 20, 
+            speed: 10, 
+            rarity: 'epic', 
+            bonus: { attack: 15, defense: 10, speed: 5 }, 
+            description: 'Most powerful companion' 
+        },
+        { 
+            id: 'sprite', 
+            name: 'Fairy Sprite', 
+            specie: 'Fey', 
+            grade: 'Rare', 
+            hp: 40, 
+            mp: 80, 
+            attack: 5, 
+            defense: 5, 
+            speed: 25, 
+            rarity: 'rare', 
+            bonus: { mp: 20, magic_damage: 0.1 }, 
+            description: 'Magical fairy ally' 
+        },
+        { 
+            id: 'golem', 
+            name: 'Stone Golem', 
+            specie: 'Construct', 
+            grade: 'Rare', 
+            hp: 120, 
+            mp: 0, 
+            attack: 20, 
+            defense: 25, 
+            speed: 5, 
+            rarity: 'rare', 
+            bonus: { defense: 15, maxHP: 50 }, 
+            description: 'Unbreakable defender' 
+        },
+        { 
+            id: 'shadow_cat', 
+            name: 'Shadow Cat', 
+            specie: 'Feline', 
+            grade: 'Epic', 
+            hp: 60, 
+            mp: 40, 
+            attack: 18, 
+            defense: 8, 
+            speed: 30, 
+            rarity: 'epic', 
+            bonus: { speed: 8, stealth: 0.5, critical: 0.1 }, 
+            description: 'Silent assassin' 
+        }
     ],
 
     // Factions (Reputation System)

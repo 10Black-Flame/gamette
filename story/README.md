@@ -28,7 +28,7 @@ A comprehensive fantasy RPG built with pure JavaScript, HTML5, and CSS3. Travel 
 ## 🚀 Quick Start
 
 ### Browser (No Installation Required)
-1. Open `story.html` directly in your web browser
+1. Open `index.html` directly in your web browser
 2. Create a character and start your adventure!
 3. Click "Save" to save your progress
 
@@ -49,14 +49,14 @@ npm start
 ```
 
 The game will be accessible at:
-- Game: `http://localhost:3000/story.html`
+- Game: `http://localhost:3000/index.html`
 - API: `http://localhost:3000/api/`
 
 ## 📦 File Structure
 
 ```
 story/
-├── story.html           # Main game HTML interface
+├── index.html           # Main game HTML interface
 ├── story.css            # Game styling and animations
 ├── story.js             # Game engine and logic
 ├── game-data.js         # Game world data (items, NPCs, enemies, locations)

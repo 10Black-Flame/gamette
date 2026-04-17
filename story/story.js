@@ -2035,13 +2035,20 @@ function openQuestBoard() {
 }
 
 function pickUpItem(item) {
-    gameState.player.addItem(item.id);
+    // FIX #7: Special handling for coins - add directly to player gold instead of inventory
+    if (item.id === 'coin' || item.name.toLowerCase().includes('coin')) {
+        gameState.player.gold += item.quantity || 1;
+        addGameLog(`Picked up ${item.quantity || 1} coins!`);
+    } else {
+        gameState.player.addItem(item.id);
+        addGameLog(`Picked up ${item.name}`);
+    }
+    
     const location = GAME_DATA.locations[gameState.player.currentLocation];
     const itemIndex = location.items.indexOf(item.id);
     if (itemIndex !== -1) {
         location.items.splice(itemIndex, 1);
     }
-    addGameLog(`Picked up ${item.name}`);
     loadLocation(gameState.player.currentLocation);
 }
 
@@ -2365,9 +2372,12 @@ function calculateEnemyExpReward(enemy) {
     const enemyLevel = getEnemyLevel(enemy);
     const playerLevel = gameState.player.level;
     const levelDiff = playerLevel - enemyLevel;
+    // FIX #5: Reduced penalty multiplier from 0.12 to 0.05 for more reasonable EXP scaling
+    // Old: 1 - levelDiff * 0.12 (too harsh, cuts 60% at 5 levels)
+    // New: 1 - levelDiff * 0.05 (cuts 25% at 5 levels, more balanced)
     const ratio = levelDiff <= 0
         ? Math.min(1.5, 1 + Math.abs(levelDiff) * 0.08)
-        : Math.max(0.15, 1 - levelDiff * 0.12);
+        : Math.max(0.25, 1 - levelDiff * 0.05);
     return Math.max(1, Math.floor(baseExp * ratio));
 }
 
@@ -2591,9 +2601,13 @@ function updateInventoryScreen() {
         const itemSlot = document.createElement('div');
         itemSlot.className = 'item-slot';
 
+        // FIX #3: Display description directly in inventory item
+        const description = itemData.description ? `<br><small>${itemData.description}</small>` : '';
+        
         itemSlot.innerHTML = `
             <strong>${itemData.name}</strong> x${item.quantity}
             <br><small>Value: ${itemData.gold} gold</small>
+            ${description}
         `;
 
         const actionButton = document.createElement('button');
@@ -2604,6 +2618,19 @@ function updateInventoryScreen() {
             actionButton.addEventListener('click', (event) => {
                 event.stopPropagation();
                 readBook(item.id);
+            });
+        // FIX #2: Add equip button for weapons
+        } else if (gameState.player.isWeaponItem(item) || itemData.weapon) {
+            actionButton.textContent = 'Equip';
+            actionButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const result = gameState.player.equipWeapon(item);
+                if (result.success) {
+                    addGameLog(`Equipped ${itemData.name}!`, 'success');
+                    updateInventoryScreen();
+                } else {
+                    addGameLog(`Cannot equip: ${result.reason}`, 'error');
+                }
             });
         } else if (itemData.effect) {
             actionButton.textContent = 'Use';
@@ -2634,6 +2661,13 @@ function updateInventoryScreen() {
 function updateStatsScreen() {
     const player = gameState.player;
     
+    // FIX #1: Ensure stats display container exists and is populated
+    const statsContainer = document.getElementById('stats-display') || document.querySelector('.stats-grid');
+    if (!statsContainer) {
+        console.warn('Stats display container not found');
+        return;
+    }
+    
     // Primary stats with bonuses
     const stats = [
         { id: 'strength', value: player.strength },
@@ -2648,7 +2682,8 @@ function updateStatsScreen() {
     
     stats.forEach(stat => {
         const bonus = player.getStatBonus(stat.id);
-        document.getElementById(`stat-${stat.id}`).textContent = Math.floor(stat.value);
+        const elem = document.getElementById(`stat-${stat.id}`);
+        if (elem) elem.textContent = Math.floor(stat.value);
         const bonusElement = document.getElementById(`stat-${stat.id}-bonus`);
         if (bonusElement) {
             bonusElement.textContent = bonus > 0 ? `+${bonus}` : '';
@@ -2657,31 +2692,39 @@ function updateStatsScreen() {
     });
     
     // HP and Mana
-    document.getElementById('stat-hp').textContent = `${player.hp}/${player.maxHP}`;
-    document.getElementById('stat-mp').textContent = `${player.mp}/${player.maxMP}`;
+    const hpElem = document.getElementById('stat-hp');
+    if (hpElem) hpElem.textContent = `${player.hp}/${player.maxHP}`;
+    const mpElem = document.getElementById('stat-mp');
+    if (mpElem) mpElem.textContent = `${player.mp}/${player.maxMP}`;
     
     // Damage range
     const minDmg = player.getMinDamage();
     const maxDmg = player.getMaxDamage();
-    document.getElementById('stat-damage').textContent = `${minDmg} - ${maxDmg}`;
+    const damageElem = document.getElementById('stat-damage');
+    if (damageElem) damageElem.textContent = `${minDmg} - ${maxDmg}`;
     
     // Defense
-    document.getElementById('stat-defense').textContent = Math.floor(player.getDefensePower());
+    const defElem = document.getElementById('stat-defense');
+    if (defElem) defElem.textContent = Math.floor(player.getDefensePower());
     
     // Crit chance
     const critChance = (player.getCritChance() * 100).toFixed(1);
-    document.getElementById('stat-crit-chance').textContent = `${critChance}%`;
+    const critElem = document.getElementById('stat-crit-chance');
+    if (critElem) critElem.textContent = `${critChance}%`;
     
     // Attack speed
     const atkSpeed = player.getAttackSpeed().toFixed(2);
-    document.getElementById('stat-attack-speed').textContent = `${atkSpeed}x`;
+    const atkElem = document.getElementById('stat-attack-speed');
+    if (atkElem) atkElem.textContent = `${atkSpeed}x`;
     
     // Dodge chance
     const dodgeChance = (player.getDodgeChance() * 100).toFixed(1);
-    document.getElementById('stat-dodge-chance').textContent = `${dodgeChance}%`;
+    const dodgeElem = document.getElementById('stat-dodge-chance');
+    if (dodgeElem) dodgeElem.textContent = `${dodgeChance}%`;
     
     // Magic damage
-    document.getElementById('stat-magic-damage').textContent = Math.floor(player.getMagicalDamage());
+    const magicElem = document.getElementById('stat-magic-damage');
+    if (magicElem) magicElem.textContent = Math.floor(player.getMagicalDamage());
 }
 
 function readBook(bookId) {

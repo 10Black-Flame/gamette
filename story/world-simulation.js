@@ -34,6 +34,8 @@ class WorldTime {
         if (worldSimulation) {
             worldSimulation.processActiveEvents();
             worldSimulation.checkNPCDeaths();
+            // FIX #6: Add NPC births to growing population
+            worldSimulation.processNPCBirths();
         }
     }
 
@@ -405,6 +407,23 @@ class WorldSimulation {
         this.updatePopulationStats();
     }
 
+    // FIX #6: Process NPC births each day for population growth
+    processNPCBirths() {
+        const birthChance = 0.05; // 5% chance per eligible couple per day
+        let birthsToday = 0;
+        
+        // Find eligible couples and process births
+        for (let npcId in this.npcStates) {
+            const npc = this.npcStates[npcId];
+            if (npc.canHaveChild() && Math.random() < birthChance) {
+                this.spawnNPC();
+                birthsToday++;
+                // Update population stats after each birth
+                this.updatePopulationStats();
+            }
+        }
+    }
+
     causePlague() {
         // Increase death chance for NPCs
         for (let npcId in this.npcStates) {
@@ -483,9 +502,11 @@ function updateWorldDisplay() {
 function simulateWorldTick() {
     if (!worldTime) return;
     
-    // Advance time every few game loops
+    // FIX #4: Advance time more frequently for better gameplay feel
+    // Old: 108000 game loops = 3 real hours per in-game hour
+    // New: 1080 game loops = 108 real SECONDS per in-game hour (more reasonable)
     worldTime.gameLoops++;
-    if (worldTime.gameLoops % 108000 === 0) {
+    if (worldTime.gameLoops % 1080 === 0) {
         worldTime.advance(1); // Advance 1 hour
         updateWorldDisplay();
         

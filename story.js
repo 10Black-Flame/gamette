@@ -1099,6 +1099,11 @@ function setupMainGameControls() {
     document.getElementById('inventory-btn').addEventListener('click', () => showScreen('inventory'));
     document.getElementById('quests-btn').addEventListener('click', () => showScreen('quests'));
     document.getElementById('map-btn').addEventListener('click', () => showScreen('map'));
+    document.getElementById('book-reader-btn').addEventListener('click', () => showScreen('bookReader'));
+    document.getElementById('shop-btn').addEventListener('click', () => showScreen('shop'));
+    document.getElementById('close-enchanter-btn')?.addEventListener('click', () => {
+    showScreen('mainGame');
+    });
     document.getElementById('guild-btn').addEventListener('click', () => showScreen('guild'));
     document.getElementById('crafting-btn').addEventListener('click', () => showScreen('crafting'));
     document.getElementById('achievements-btn').addEventListener('click', () => showScreen('achievements'));

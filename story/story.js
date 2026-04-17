@@ -1,5 +1,7 @@
 // Main Game Engine for Chronicles of Aetheria
 
+import { Weapon, WEAPON_DEFINITIONS, createWeapon, Enchantment, ENCHANTMENT_DEFINITIONS, createEnchantment } from "./weapon.js";
+
 class Player {
     constructor(name, classType) {
         this.name = name;
@@ -445,6 +447,312 @@ class Player {
             addGameLog('Hidden class unlocked: Warlock! You can now switch to this class.', 'success');
         }
     }
+}
+
+// ============ WEAPON HELPER FUNCTIONS ============
+function normalizeWeaponInstance(weaponData) {
+    if (!weaponData) return null;
+    
+    // If it's already a Weapon instance, return it
+    if (weaponData.durability !== undefined && weaponData.damage !== undefined && weaponData.stats) {
+        return weaponData;
+    }
+    
+    // If it's a weapon object from WEAPON_DEFINITIONS, create a Weapon instance
+    if (typeof weaponData === 'object' && weaponData.id && !weaponData.weapon) {
+        return new Weapon(weaponData);
+    }
+    
+    // If it's a string ID, look it up in WEAPON_DEFINITIONS
+    if (typeof weaponData === 'string') {
+        const weaponDef = WEAPON_DEFINITIONS[weaponData];
+        if (weaponDef) {
+            return new Weapon(weaponDef);
+        }
+    }
+    
+    return null;
+}
+
+function getWeaponById(weaponId) {
+    if (!weaponId || typeof weaponId !== 'string') return null;
+    const weaponDef = WEAPON_DEFINITIONS[weaponId];
+    return weaponDef ? new Weapon(weaponDef) : null;
+}
+
+// ============ LOOT & ECONOMY SYSTEM ============
+
+/**
+ * Generate procedural weapon loot based on enemy level and rarity chance
+ * Higher level enemies drop rarer weapons
+ */
+function generateLootWeapon(enemyLevel, luckBonus = 0) {
+    const allWeapons = Object.keys(WEAPON_DEFINITIONS);
+    
+    // Rarity distribution: scale rarity chance by enemy level
+    const rarityRoll = Math.random() + (luckBonus * 0.05);
+    
+    let rarityPool;
+    if (rarityRoll < 0.6) {
+        rarityPool = allWeapons.filter(w => WEAPON_DEFINITIONS[w].rarity === 'common');
+    } else if (rarityRoll < 0.85) {
+        rarityPool = allWeapons.filter(w => WEAPON_DEFINITIONS[w].rarity === 'rare');
+    } else if (rarityRoll < 0.95) {
+        rarityPool = allWeapons.filter(w => WEAPON_DEFINITIONS[w].rarity === 'epic');
+    } else {
+        rarityPool = allWeapons.filter(w => WEAPON_DEFINITIONS[w].rarity === 'legendary');
+    }
+    
+    if (rarityPool.length === 0) return null;
+    
+    // Pick random weapon from rarity pool
+    const weaponId = rarityPool[Math.floor(Math.random() * rarityPool.length)];
+    const weapon = createWeapon(weaponId);
+    
+    // Scale weapon level requirement and stats by enemy level
+    if (weapon) {
+        weapon.levelRequired = Math.max(1, Math.floor(enemyLevel * 0.75));
+        // Add rarity-based stat scaling
+        const statScale = 1 + (enemyLevel - weapon.levelRequired) * 0.1;
+        weapon.damage = Math.floor(weapon.damage * Math.max(1, statScale));
+    }
+    
+    return weapon;
+}
+
+/**
+ * Calculate sell value of weapon based on rarity, damage, and durability
+ */
+function calculateWeaponSellValue(weapon) {
+    if (!weapon) return 0;
+    
+    const basePriceByRarity = {
+        common: 10,
+        rare: 50,
+        epic: 200,
+        legendary: 500
+    };
+    
+    const basePrice = basePriceByRarity[weapon.rarity] || 10;
+    const damageModifier = weapon.damage * 1.5;
+    const statModifier = (weapon.stats?.strength || 0) + (weapon.stats?.agility || 0) + (weapon.stats?.intelligence || 0);
+    
+    // Durability affects value (broken weapons worth less)
+    let durabilityModifier = 1;
+    if (weapon.maxDurability !== Infinity) {
+        durabilityModifier = Math.max(0.3, weapon.currentDurability / weapon.maxDurability);
+    }
+    
+    const totalValue = Math.floor((basePrice + damageModifier + (statModifier * 5)) * durabilityModifier);
+    return Math.max(1, totalValue);
+}
+
+/**
+ * Sell weapon from inventory and add gold to player
+ * UI Hook: Call this from sell buttons
+ */
+function sellWeapon(weaponId) {
+    const player = gameState.player;
+    const inventoryItem = player.inventory.find(item => 
+        item.weapon && item.weapon.id === weaponId
+    );
+    
+    if (!inventoryItem) {
+        return { success: false, reason: 'weapon_not_found', message: 'Weapon not in inventory' };
+    }
+    
+    const sellValue = calculateWeaponSellValue(inventoryItem.weapon);
+    player.gold += sellValue;
+    
+    // Remove weapon from inventory
+    if (player.equippedWeapon && player.equippedWeapon.id === weaponId) {
+        player.unequipWeapon();
+    }
+    player.removeItem(weaponId, 1);
+    
+    addGameLog(`Sold ${inventoryItem.weapon.name} for ${sellValue} gold!`, 'success');
+    return { success: true, goldEarned: sellValue };
+}
+
+/**
+ * UI Hook: Equip weapon by ID from inventory
+ */
+function equipWeaponUI(weaponId) {
+    const player = gameState.player;
+    const weapon = getWeaponById(weaponId);
+    
+    if (!weapon) {
+        return { success: false, reason: 'invalid_weapon', message: 'Weapon does not exist' };
+    }
+    
+    // Check level and class requirements
+    if (player.level < weapon.levelRequired) {
+        return { success: false, reason: 'level_required', message: `Requires level ${weapon.levelRequired}` };
+    }
+    
+    if (!weapon.canBeUsedBy(player.classType)) {
+        return { success: false, reason: 'class_locked', message: `Your class cannot use this weapon` };
+    }
+    
+    // Check if weapon is in inventory
+    const inventoryItem = player.inventory.find(item => 
+        item.weapon && item.weapon.id === weaponId
+    );
+    
+    if (!inventoryItem) {
+        return { success: false, reason: 'not_in_inventory', message: 'Weapon not in inventory' };
+    }
+    
+    const result = player.equipWeapon(inventoryItem.weapon);
+    if (result.success) {
+        addGameLog(`Equipped ${inventoryItem.weapon.name}`, 'success');
+    }
+    return result;
+}
+
+/**
+ * UI Hook: Unequip current weapon
+ */
+function unequipWeaponUI() {
+    const player = gameState.player;
+    if (!player.equippedWeapon) {
+        return { success: false, reason: 'no_weapon_equipped', message: 'No weapon equipped' };
+    }
+    
+    const weaponName = player.equippedWeapon.name;
+    player.unequipWeapon();
+    addGameLog(`Unequipped ${weaponName}`, 'info');
+    return { success: true, unequipped: weaponName };
+}
+
+/**
+ * UI Hook: Get inventory summary for UI display
+ */
+function getInventorySummary() {
+    const player = gameState.player;
+    const summary = {
+        gold: player.gold,
+        equippedWeapon: player.equippedWeapon ? {
+            id: player.equippedWeapon.id,
+            name: player.equippedWeapon.name,
+            damage: player.equippedWeapon.damage,
+            rarity: player.equippedWeapon.rarity,
+            durability: player.equippedWeapon.getDurabilityStatus(),
+            durabilityPercent: player.equippedWeapon.getDurabilityPercent()
+        } : null,
+        weaponCount: player.inventory.filter(item => item.weapon).length,
+        totalItems: player.inventory.length,
+        weapons: player.inventory
+            .filter(item => item.weapon)
+            .map(item => ({
+                id: item.weapon.id,
+                name: item.weapon.name,
+                rarity: item.weapon.rarity,
+                damage: item.weapon.damage,
+                durability: item.weapon.getDurabilityPercent(),
+                sellValue: calculateWeaponSellValue(item.weapon),
+                quantity: item.quantity
+            }))
+    };
+    return summary;
+}
+
+/**
+ * UI Hook: Get list of weapons available in inventory for equipping
+ */
+function getEquippableWeapons() {
+    const player = gameState.player;
+    return player.inventory
+        .filter(item => item.weapon && item.weapon.canBeEquippedByPlayer(player))
+        .map(item => ({
+            id: item.weapon.id,
+            name: item.weapon.name,
+            rarity: item.weapon.rarity,
+            damage: item.weapon.damage,
+            equipped: player.equippedWeapon?.id === item.weapon.id,
+            sellValue: calculateWeaponSellValue(item.weapon)
+        }));
+}
+
+/**
+ * UI Hook: Repair weapon using Blacksmith (gold cost)
+ */
+function repairWeaponUI(weaponId, repairType = 'full') {
+    const player = gameState.player;
+    const inventoryItem = player.inventory.find(item => 
+        item.weapon && item.weapon.id === weaponId
+    );
+    
+    if (!inventoryItem) {
+        return { success: false, reason: 'weapon_not_found', message: 'Weapon not in inventory' };
+    }
+    
+    const weapon = inventoryItem.weapon;
+    const pricePerDurability = 5;
+    
+    if (weapon.maxDurability === Infinity) {
+        return { success: false, reason: 'legendary_item', message: 'Legendary weapons do not degrade' };
+    }
+    
+    let repairAmount, totalCost;
+    if (repairType === 'full') {
+        repairAmount = weapon.maxDurability - weapon.currentDurability;
+        totalCost = repairAmount * pricePerDurability;
+    } else if (repairType === 'half') {
+        repairAmount = (weapon.maxDurability - weapon.currentDurability) / 2;
+        totalCost = Math.ceil(repairAmount * pricePerDurability);
+    } else {
+        return { success: false, reason: 'invalid_repair_type' };
+    }
+    
+    if (player.gold < totalCost) {
+        return { success: false, reason: 'insufficient_gold', message: `Costs ${totalCost}g, you have ${player.gold}g` };
+    }
+    
+    player.gold -= totalCost;
+    weapon.repair(repairAmount);
+    addGameLog(`Repaired ${weapon.name}. Cost: ${totalCost} gold`, 'success');
+    
+    return { success: true, weaponName: weapon.name, cost: totalCost, durability: weapon.getDurabilityPercent() };
+}
+
+/**
+ * UI Hook: Enchant weapon via Enchanter (gold cost)
+ */
+function enchantWeaponUI(weaponId, enchantmentId) {
+    const player = gameState.player;
+    const inventoryItem = player.inventory.find(item => 
+        item.weapon && item.weapon.id === weaponId
+    );
+    
+    if (!inventoryItem) {
+        return { success: false, reason: 'weapon_not_found' };
+    }
+    
+    const weapon = inventoryItem.weapon;
+    const enchData = ENCHANTMENT_DEFINITIONS[enchantmentId];
+    
+    if (!enchData) {
+        return { success: false, reason: 'enchantment_not_found' };
+    }
+    
+    if (player.level < enchData.levelRequired) {
+        return { success: false, reason: 'level_required', message: `Requires level ${enchData.levelRequired}` };
+    }
+    
+    if (player.gold < enchData.cost) {
+        return { success: false, reason: 'insufficient_gold', message: `Costs ${enchData.cost}g` };
+    }
+    
+    if (weapon.enchantments.length >= weapon.enchantmentSlots) {
+        return { success: false, reason: 'no_slots', message: 'No enchantment slots available' };
+    }
+    
+    player.gold -= enchData.cost;
+    const result = weapon.addEnchantment(enchData);
+    
+    addGameLog(`Added ${enchData.name} to ${weapon.name}. Cost: ${enchData.cost} gold`, 'success');
+    return { success: true, weaponName: weapon.name, enchantment: enchData.name };
 }
 
 // ============ CLASS MANAGEMENT ============
@@ -1254,6 +1562,7 @@ function setupMainGameControls() {
     document.getElementById('close-classes-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-shop-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('close-book-reader-btn').addEventListener('click', () => showScreen('mainGame'));
+    document.getElementById('close-enchanter-btn').addEventListener('click', () => showScreen('mainGame'));
     document.getElementById('scan-book-btn').addEventListener('click', () => {
         const currentBook = document.getElementById('book-reader-title').textContent;
         // Find book ID from name
@@ -1440,6 +1749,15 @@ function showCombatVictoryModal() {
         dropEntry.className = 'reward-item';
         dropEntry.innerHTML = `<span>Drop</span><strong>${pending.droppedItemName || 'None'}</strong>`;
         summary.appendChild(dropEntry);
+        
+        // Show weapon drop if available
+        if (pending.droppedWeapon) {
+            const weaponEntry = document.createElement('div');
+            weaponEntry.className = 'reward-item';
+            const rarityClass = `rarity-${pending.droppedWeapon.rarity}`;
+            weaponEntry.innerHTML = `<span>Weapon</span><strong class="${rarityClass}">${pending.droppedWeapon.name}</strong>`;
+            summary.appendChild(weaponEntry);
+        }
     }
 
     const modal = document.getElementById('combat-victory-modal');
@@ -1469,6 +1787,12 @@ function claimCombatRewards() {
         player.addItem(pending.droppedItemId);
         addGameLog(`Claimed drop: ${GAME_DATA.items[pending.droppedItemId].name}`, 'success');
         player.treasuresFound++;
+    }
+    
+    // ============ ADD WEAPON LOOT TO INVENTORY ============
+    if (pending.droppedWeapon) {
+        player.addWeapon(pending.droppedWeapon);
+        addGameLog(`Claimed weapon: ${pending.droppedWeapon.name} (${pending.droppedWeapon.rarity})`, 'success');
     }
 
     addGameLog(`Claimed rewards from ${pending.enemyName}: ${pending.exp} EXP and ${pending.gold} gold.`, 'success');
@@ -2407,6 +2731,14 @@ function combatAttack() {
         addGameLog(message, 'player');
     }
     
+    // Degrade equipped weapon on attack
+    if (player.equippedWeapon && player.equippedWeapon.degrade) {
+        const degradeResult = player.equippedWeapon.degrade(2);
+        if (player.equippedWeapon.getDurabilityPercent() <= 20) {
+            addGameLog(`⚠️ ${player.equippedWeapon.name} is wearing out! (${player.equippedWeapon.getDurabilityPercent()}%)`, 'warning');
+        }
+    }
+    
     updateCombatUI();
 
     if (enemy.hp <= 0) {
@@ -2510,6 +2842,14 @@ function endCombat(victory) {
         const expReward = calculateEnemyExpReward(enemy);
         const goldReward = enemyData.gold || 0;
         const droppedItemId = (enemyData.drops && enemyData.drops.length > 0) ? enemyData.drops[Math.floor(Math.random() * enemyData.drops.length)] : null;
+        
+        // ============ PROCEDURAL WEAPON LOOT ============
+        // 40% chance for enemy to drop a weapon based on level
+        let droppedWeapon = null;
+        if (Math.random() < 0.4) {
+            const enemyLevel = getEnemyLevel(enemy);
+            droppedWeapon = generateLootWeapon(enemyLevel, gameState.player.luck);
+        }
 
         gameState.pendingCombatRewards = {
             enemyName: enemy?.name || 'Enemy',
@@ -2517,7 +2857,9 @@ function endCombat(victory) {
             exp: expReward,
             gold: goldReward,
             droppedItemId: droppedItemId,
-            droppedItemName: droppedItemId ? GAME_DATA.items[droppedItemId]?.name : null
+            droppedItemName: droppedItemId ? GAME_DATA.items[droppedItemId]?.name : null,
+            droppedWeapon: droppedWeapon,
+            droppedWeaponName: droppedWeapon?.name || null
         };
 
         gameState.player.enemiesKilled++;
@@ -4087,9 +4429,387 @@ setInterval(() => {
 
 // ============ WEAPON SYSTEM ============
 
-import { createWeapon } from "./weapons.js";
 const playerWeapon = createWeapon("iron_sword");
 
 console.log(playerWeapon);
 
-player.inventory.push(createWeapon("fire_blade"));
+// gameState.player.inventory.push(createWeapon("fire_blade"));
+
+// ============ WEAPON ENCHANTMENT SYSTEM ============
+
+// Open Blacksmith Shop Interface
+function openBlacksmithShop() {
+    const player = gameState.player;
+    const repairPricePerDurability = 5;
+    
+    showScreen('enchanterInterface');
+    document.getElementById('enchanter-title').textContent = "Thorin's Smithy";
+    document.getElementById('enchanter-desc').textContent = "Repair your weapons and keep them in peak condition.";
+    
+    const interfaceContent = document.getElementById('enchanter-interface-content');
+    interfaceContent.innerHTML = `
+        <div class="services-menu">
+            <h3>Blacksmith Services</h3>
+            <button class="btn btn-primary service-btn" data-service="repair">
+                Repair Weapon
+            </button>
+            <button class="btn btn-primary service-btn" data-service="upgrade">
+                Upgrade Weapon
+            </button>
+            <hr>
+            <p style="font-size: 0.9em; color: #888;">Current Gold: <strong>${player.gold}</strong></p>
+        </div>
+    `;
+    
+    // Repair button
+    interfaceContent.querySelector('[data-service="repair"]')?.addEventListener('click', () => {
+        showRepairInterface(player, repairPricePerDurability);
+    });
+    
+    // Upgrade button
+    interfaceContent.querySelector('[data-service="upgrade"]')?.addEventListener('click', () => {
+        showUpgradeInterface(player);
+    });
+}
+
+function showRepairInterface(player, pricePerDurability) {
+    if (!player.equippedWeapon) {
+        alert("No weapon equipped. Equip a weapon to repair it.");
+        return;
+    }
+    
+    const weapon = player.equippedWeapon;
+    const currentDurability = weapon.getDurabilityPercent();
+    
+    if (currentDurability === 100) {
+        alert(`${weapon.name} is already in perfect condition!`);
+        return;
+    }
+    
+    const repairFull = (weapon.maxDurability - weapon.currentDurability) * pricePerDurability;
+    const repairPartial = repairFull / 2;
+    
+    const content = document.getElementById('enchanter-interface-content');
+    content.innerHTML = `
+        <div class="repair-menu">
+            <h3>Repair ${weapon.name}</h3>
+            <p>Current Durability: <strong>${weapon.getDurabilityStatus()}</strong> (${currentDurability}%)</p>
+            
+            <button class="btn btn-success" data-action="repair-full">
+                Full Repair - ${repairFull} Gold
+            </button>
+            <button class="btn btn-secondary" data-action="repair-half">
+                Half Repair - ${Math.ceil(repairPartial)} Gold
+            </button>
+            <button class="btn btn-secondary" data-action="back">
+                Back
+            </button>
+        </div>
+    `;
+    
+    content.querySelector('[data-action="repair-full"]')?.addEventListener('click', () => {
+        if (player.gold < repairFull) {
+            alert("Not enough gold!");
+            return;
+        }
+        weapon.repair();
+        player.gold -= repairFull;
+        addGameLog(`Repaired ${weapon.name}! Status: ${weapon.getDurabilityStatus()}`, "success");
+        openBlacksmithShop();
+        updateUI();
+    });
+    
+    content.querySelector('[data-action="repair-half"]')?.addEventListener('click', () => {
+        if (player.gold < repairPartial) {
+            alert("Not enough gold!");
+            return;
+        }
+        weapon.repair(weapon.maxDurability / 2);
+        player.gold -= Math.ceil(repairPartial);
+        addGameLog(`Partially repaired ${weapon.name}! Status: ${weapon.getDurabilityStatus()}`, "success");
+        openBlacksmithShop();
+        updateUI();
+    });
+    
+    content.querySelector('[data-action="back"]')?.addEventListener('click', openBlacksmithShop);
+}
+
+function showUpgradeInterface(player) {
+    if (!player.equippedWeapon) {
+        alert("No weapon equipped.");
+        return;
+    }
+    
+    const weapon = player.equippedWeapon;
+    const upgradeCost = weapon.damage * 10;
+    
+    const content = document.getElementById('enchanter-interface-content');
+    content.innerHTML = `
+        <div class="upgrade-menu">
+            <h3>Upgrade ${weapon.name}</h3>
+            <p>Current Damage: <strong>${weapon.damage}</strong></p>
+            <p>Upgrade Cost: <strong>${upgradeCost} Gold</strong></p>
+            <p>New Damage: <strong>${weapon.damage + 3}</strong></p>
+            
+            <button class="btn btn-success" data-action="upgrade-confirm">
+                Upgrade Weapon
+            </button>
+            <button class="btn btn-secondary" data-action="back">
+                Back
+            </button>
+        </div>
+    `;
+    
+    content.querySelector('[data-action="upgrade-confirm"]')?.addEventListener('click', () => {
+        if (player.gold < upgradeCost) {
+            alert("Not enough gold!");
+            return;
+        }
+        weapon.damage += 3;
+        player.gold -= upgradeCost;
+        addGameLog(`${weapon.name} upgraded! Damage: ${weapon.damage}`, "success");
+        saveSessionState();
+        openBlacksmithShop();
+        updateUI();
+    });
+    
+    content.querySelector('[data-action="back"]')?.addEventListener('click', openBlacksmithShop);
+}
+
+// ============ ENCHANTER FUNCTIONS ============
+
+function openEnchanterShop() {
+    const player = gameState.player;
+    
+    showScreen('enchanterInterface');
+    document.getElementById('enchanter-title').textContent = "Lyra's Enchantment Chamber";
+    document.getElementById('enchanter-desc').textContent = "Imbue your weapons with magical power.";
+    
+    const interfaceContent = document.getElementById('enchanter-interface-content');
+    interfaceContent.innerHTML = `
+        <div class="services-menu">
+            <h3>Enchantment Services</h3>
+            <button class="btn btn-primary service-btn" data-service="view-enchantments">
+                View Enchantments
+            </button>
+            <button class="btn btn-primary service-btn" data-service="add-enchantment">
+                Add Enchantment
+            </button>
+            <button class="btn btn-warning service-btn" data-service="remove-enchantment">
+                Remove Enchantment
+            </button>
+            <hr>
+            <p style="font-size: 0.9em; color: #888;">Your Gold: <strong>${player.gold}</strong></p>
+        </div>
+    `;
+    
+    interfaceContent.querySelector('[data-service="view-enchantments"]')?.addEventListener('click', () => {
+        showEnchantmentsList();
+    });
+    
+    interfaceContent.querySelector('[data-service="add-enchantment"]')?.addEventListener('click', () => {
+        showAddEnchantmentInterface(player);
+    });
+    
+    interfaceContent.querySelector('[data-service="remove-enchantment"]')?.addEventListener('click', () => {
+        showRemoveEnchantmentInterface(player);
+    });
+}
+
+function showEnchantmentsList() {
+    const content = document.getElementById('enchanter-interface-content');
+    const player = gameState.player;
+    const weapon = player.equippedWeapon;
+    
+    if (!weapon) {
+        alert("No weapon equipped.");
+        return;
+    }
+    
+    let html = `
+        <div class="enchantments-list">
+            <h3>${weapon.name} Enchantments</h3>
+            <p>Slots Used: <strong>${weapon.enchantments.length}/${weapon.enchantmentSlots}</strong></p>
+    `;
+    
+    if (weapon.enchantments.length === 0) {
+        html += `<p style="color: #999;">No enchantments. Add magical power to this weapon!</p>`;
+    } else {
+        html += `<div class="enchantments">`;
+        weapon.enchantments.forEach((ench, idx) => {
+            const enchData = ENCHANTMENT_DEFINITIONS[ench.id];
+            html += `
+                <div class="enchantment-item">
+                    <strong>${enchData.name}</strong> <span style="color: #888;">(${enchData.rarity})</span>
+                    <p>${enchData.description}</p>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+    
+    html += `
+        <button class="btn btn-secondary" data-action="back">Back</button>
+    `;
+    
+    content.innerHTML = html;
+    content.querySelector('[data-action="back"]')?.addEventListener('click', openEnchanterShop);
+}
+
+function showAddEnchantmentInterface(player) {
+    const weapon = player.equippedWeapon;
+    
+    if (!weapon) {
+        alert("No weapon equipped.");
+        return;
+    }
+    
+    if (weapon.enchantments.length >= weapon.enchantmentSlots) {
+        alert(`${weapon.name} has no available enchantment slots!`);
+        return;
+    }
+    
+    const availableEnchantments = Object.values(ENCHANTMENT_DEFINITIONS).filter(
+        ench => player.level >= ench.levelRequired && 
+                 !weapon.enchantments.find(we => we.id === ench.id)
+    );
+    
+    const content = document.getElementById('enchanter-interface-content');
+    let html = `
+        <div class="add-enchantment">
+            <h3>Available Enchantments</h3>
+            <p>Slots: <strong>${weapon.enchantments.length}/${weapon.enchantmentSlots}</strong></p>
+            <div class="enchantment-options">
+    `;
+    
+    availableEnchantments.forEach(ench => {
+        const canAfford = player.gold >= ench.cost;
+        html += `
+            <div class="enchantment-option ${!canAfford ? 'disabled' : ''}">
+                <strong>${ench.name}</strong> <span style="color: #888;">(${ench.rarity})</span>
+                <p>${ench.description}</p>
+                <p>${ench.cost} Gold</p>
+                <button class="btn btn-small ${!canAfford ? 'disabled' : 'btn-success'}" 
+                        data-enchant-id="${ench.id}" 
+                        ${!canAfford ? 'disabled' : ''}>
+                    ${canAfford ? 'Add' : 'Not Enough Gold'}
+                </button>
+            </div>
+        `;
+    });
+    
+    html += `
+        </div>
+        <button class="btn btn-secondary" data-action="back">Back</button>
+    `;
+    
+    content.innerHTML = html;
+    
+    content.querySelectorAll('[data-enchant-id]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const enchId = e.target.dataset.enchantId;
+            const enchData = ENCHANTMENT_DEFINITIONS[enchId];
+            
+            if (player.gold < enchData.cost) {
+                alert("Not enough gold!");
+                return;
+            }
+            
+            const ench = { id: enchId, ...enchData };
+            const result = weapon.addEnchantment(ench);
+            
+            if (result.success) {
+                player.gold -= enchData.cost;
+                addGameLog(`Added ${enchData.name} to ${weapon.name}!`, "success");
+                saveSessionState();
+                showEnchantmentsList();
+                updateUI();
+            }
+        });
+    });
+    
+    content.querySelector('[data-action="back"]')?.addEventListener('click', openEnchanterShop);
+}
+
+function showRemoveEnchantmentInterface(player) {
+    const weapon = player.equippedWeapon;
+    
+    if (!weapon || weapon.enchantments.length === 0) {
+        alert("No enchantments to remove.");
+        return;
+    }
+    
+    const content = document.getElementById('enchanter-interface-content');
+    let html = `
+        <div class="remove-enchantment">
+            <h3>Remove Enchantment</h3>
+            <p style="color: #888; font-size: 0.9em;">Removal costs 25% of original enchantment cost</p>
+            <div class="enchantment-options">
+    `;
+    
+    weapon.enchantments.forEach((ench, idx) => {
+        const enchData = ENCHANTMENT_DEFINITIONS[ench.id];
+        const refund = Math.floor(enchData.cost * 0.25);
+        
+        html += `
+            <div class="enchantment-option">
+                <strong>${enchData.name}</strong> 
+                <button class="btn btn-small btn-warning" data-remove-id="${ench.id}">
+                    Remove (Refund: ${refund}g)
+                </button>
+            </div>
+        `;
+    });
+    
+    html += `
+        </div>
+        <button class="btn btn-secondary" data-action="back">Back</button>
+    `;
+    
+    content.innerHTML = html;
+    
+    content.querySelectorAll('[data-remove-id]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const enchId = e.target.dataset.removeId;
+            const enchData = ENCHANTMENT_DEFINITIONS[enchId];
+            const refund = Math.floor(enchData.cost * 0.25);
+            
+            const result = weapon.removeEnchantment(enchId);
+            if (result.success) {
+                player.gold += refund;
+                addGameLog(`Removed ${enchData.name}. Refunded ${refund} gold.`, "success");
+                saveSessionState();
+                showRemoveEnchantmentInterface(player);
+                updateUI();
+            }
+        });
+    });
+    
+    content.querySelector('[data-action="back"]')?.addEventListener('click', openEnchanterShop);
+}
+
+// Add to interactWithNPC function to handle Blacksmith & Enchanter
+function handleSpecialNPCInteraction(npc) {
+    if (npc.type === 'blacksmith') {
+        openBlacksmithShop();
+        return true;
+    }
+    
+    if (npc.type === 'enchanter') {
+        openEnchanterShop();
+        return true;
+    }
+    
+    return false;
+}
+
+function interactWithNPC(npc) {
+    let dialogue = npc.dialogue;
+    
+    // NEW: Check for special NPC interactions first
+    if (handleSpecialNPCInteraction(npc)) {
+        return;
+    }
+    
+    // ... rest of existing code
+}

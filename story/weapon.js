@@ -15,6 +15,8 @@ export class Weapon {
         } = {},
         effects = [],
         description = "",
+        levelRequired = 1,
+        allowedClasses = [],
     } = {}) {
         this.id = id;
         this.name = name;
@@ -23,7 +25,8 @@ export class Weapon {
         this.attackSpeed = attackSpeed;
         this.rarity = rarity;
         this.element = element;
-        this.durability = durability ?? this.getDefaultDurability(rarity);
+        this.maxDurability = durability ?? this.getDefaultDurability(rarity);
+        this.currentDurability = this.maxDurability;
         this.stats = {
             strength,
             agility,
@@ -31,6 +34,10 @@ export class Weapon {
         };
         this.effects = Array.isArray(effects) ? [...effects] : [];
         this.description = description;
+        this.levelRequired = levelRequired;
+        this.allowedClasses = Array.isArray(allowedClasses) ? allowedClasses : [];
+        this.enchantmentSlots = this.getEnchantmentSlots(rarity);
+        this.enchantments = [];
     }
 
     getDefaultDurability(rarity) {
@@ -45,6 +52,114 @@ export class Weapon {
         };
 
         return durabilityByRarity[rarity] ?? 100;
+    }
+
+    getEnchantmentSlots(rarity) {
+        const slotsByRarity = {
+            common: 1,
+            rare: 2,
+            epic: 3,
+            legendary: 4,
+        };
+        return slotsByRarity[rarity] ?? 1;
+    }
+
+    canBeUsedBy(playerClass) {
+        if (this.allowedClasses.length === 0) {
+            return true; // Available to all classes by default
+        }
+        return this.allowedClasses.includes(playerClass);
+    }
+
+    canBeEquippedByPlayer(player) {
+        if (player.level < this.levelRequired) {
+            return false;
+        }
+        return this.canBeUsedBy(player.classType);
+    }
+
+    getDurabilityPercent() {
+        if (this.maxDurability === Infinity) {
+            return 100;
+        }
+        return Math.floor((this.currentDurability / this.maxDurability) * 100);
+    }
+
+    getDurabilityStatus() {
+        const percent = this.getDurabilityPercent();
+        if (percent === 100) return "Perfect";
+        if (percent >= 75) return "Good";
+        if (percent >= 50) return "Fair";
+        if (percent >= 25) return "Poor";
+        return "Critical";
+    }
+
+    degrade(amount = 1) {
+        if (this.maxDurability === Infinity) {
+            return { success: true, currentDurability: Infinity };
+        }
+        
+        this.currentDurability = Math.max(0, this.currentDurability - amount);
+        return { success: true, currentDurability: this.currentDurability };
+    }
+
+    repair(amount = null) {
+        if (this.maxDurability === Infinity) {
+            return { success: true, currentDurability: Infinity };
+        }
+
+        if (amount === null) {
+            this.currentDurability = this.maxDurability;
+        } else {
+            this.currentDurability = Math.min(this.maxDurability, this.currentDurability + amount);
+        }
+
+        return { success: true, currentDurability: this.currentDurability };
+    }
+
+    addEnchantment(enchantmentData) {
+        if (this.enchantments.length >= this.enchantmentSlots) {
+            return { success: false, reason: "no_slots_available" };
+        }
+
+        if (this.enchantments.find(e => e.id === enchantmentData.id)) {
+            return { success: false, reason: "already_enchanted" };
+        }
+
+        this.enchantments.push({
+            id: enchantmentData.id,
+            name: enchantmentData.name,
+            rarity: enchantmentData.rarity,
+            stats: enchantmentData.stats,
+            effects: enchantmentData.effects,
+        });
+
+        return { success: true, enchantmentCount: this.enchantments.length };
+    }
+
+    removeEnchantment(enchantmentId) {
+        const index = this.enchantments.findIndex(e => e.id === enchantmentId);
+        if (index === -1) {
+            return { success: false, reason: "enchantment_not_found" };
+        }
+
+        this.enchantments.splice(index, 1);
+        return { success: true, enchantmentCount: this.enchantments.length };
+    }
+
+    getTotalStats() {
+        const totalStats = { ...this.stats };
+        
+        // Add stats from enchantments
+        this.enchantments.forEach(ench => {
+            if (ench.stats) {
+                Object.keys(ench.stats).forEach(stat => {
+                    totalStats[stat] = (totalStats[stat] || 0) + ench.stats[stat];
+                });
+            }
+        });
+
+        return totalStats;
     }
 }
 
@@ -454,4 +569,203 @@ window.WeaponSystem = {
     Weapon,
     WEAPON_DEFINITIONS,
     createWeapon,
+};
+
+// ============ ENCHANTMENT SYSTEM ============
+export class Enchantment {
+    constructor({
+        id,
+        name,
+        description,
+        rarity = "common",
+        stats = {},
+        effects = [],
+        cost = 100,
+        levelRequired = 1,
+    } = {}) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.rarity = rarity;
+        this.stats = stats;
+        this.effects = effects;
+        this.cost = cost;
+        this.levelRequired = levelRequired;
+        this.appliedToWeapon = null;
+    }
+}
+
+export const ENCHANTMENT_DEFINITIONS = {
+    // Common Enchantments (Slot 1)
+    sharpness_1: {
+        id: "sharpness_1",
+        name: "Sharpness I",
+        description: "+2 Damage",
+        rarity: "common",
+        stats: {},
+        effects: [{ type: "damage_boost", amount: 2 }],
+        cost: 50,
+        levelRequired: 1,
+    },
+
+    swiftness_1: {
+        id: "swiftness_1",
+        name: "Swiftness I",
+        description: "+0.2 Attack Speed",
+        rarity: "common",
+        stats: {},
+        effects: [{ type: "speed_boost", amount: 0.2 }],
+        cost: 50,
+        levelRequired: 1,
+    },
+
+    fortitude_1: {
+        id: "fortitude_1",
+        name: "Fortitude I",
+        description: "+1 Strength",
+        rarity: "common",
+        stats: { strength: 1 },
+        effects: [],
+        cost: 40,
+        levelRequired: 1,
+    },
+
+    agility_1: {
+        id: "agility_1",
+        name: "Agility I",
+        description: "+1 Agility",
+        rarity: "common",
+        stats: { agility: 1 },
+        effects: [],
+        cost: 40,
+        levelRequired: 1,
+    },
+
+    intellect_1: {
+        id: "intellect_1",
+        name: "Intellect I",
+        description: "+1 Intelligence",
+        rarity: "common",
+        stats: { intelligence: 1 },
+        effects: [],
+        cost: 40,
+        levelRequired: 1,
+    },
+
+    // Rare Enchantments (Slot 2)
+    sharpness_2: {
+        id: "sharpness_2",
+        name: "Sharpness II",
+        description: "+4 Damage, +5% Crit",
+        rarity: "rare",
+        stats: {},
+        effects: [{ type: "damage_boost", amount: 4 }, { type: "crit_boost", percent: 0.05 }],
+        cost: 200,
+        levelRequired: 10,
+    },
+
+    life_steal: {
+        id: "life_steal",
+        name: "Life Steal",
+        description: "Heal 10% of damage dealt",
+        rarity: "rare",
+        stats: {},
+        effects: [{ type: "lifesteal", percent: 0.1 }],
+        cost: 300,
+        levelRequired: 15,
+    },
+
+    flame_enchant: {
+        id: "flame_enchant",
+        name: "Flame",
+        description: "Fire damage on hit",
+        rarity: "rare",
+        stats: {},
+        effects: [{ type: "burn", chance: 0.25, damage: 8 }],
+        cost: 250,
+        levelRequired: 12,
+    },
+
+    frost_enchant: {
+        id: "frost_enchant",
+        name: "Frost",
+        description: "Slow enemy on hit",
+        rarity: "rare",
+        stats: {},
+        effects: [{ type: "freeze", chance: 0.2, duration: 1 }],
+        cost: 250,
+        levelRequired: 12,
+    },
+
+    thunder_enchant: {
+        id: "thunder_enchant",
+        name: "Thunder",
+        description: "Chain lightning effects",
+        rarity: "rare",
+        stats: {},
+        effects: [{ type: "shock", chance: 0.3, damage: 12 }],
+        cost: 280,
+        levelRequired: 14,
+    },
+
+    // Epic Enchantments (Slot 3)
+    sharpness_3: {
+        id: "sharpness_3",
+        name: "Sharpness III",
+        description: "+8 Damage, +10% Crit",
+        rarity: "epic",
+        stats: {},
+        effects: [{ type: "damage_boost", amount: 8 }, { type: "crit_boost", percent: 0.1 }],
+        cost: 500,
+        levelRequired: 20,
+    },
+
+    vampirism: {
+        id: "vampirism",
+        name: "Vampirism",
+        description: "Heal 25% of damage dealt",
+        rarity: "epic",
+        stats: {},
+        effects: [{ type: "lifesteal", percent: 0.25 }],
+        cost: 600,
+        levelRequired: 25,
+    },
+
+    chaos: {
+        id: "chaos",
+        name: "Chaos",
+        description: "Random elemental damage",
+        rarity: "epic",
+        stats: {},
+        effects: [{ type: "chaos_damage", chance: 0.4, damageRange: [5, 20] }],
+        cost: 700,
+        levelRequired: 28,
+    },
+
+    divine: {
+        id: "divine",
+        name: "Divine",
+        description: "+15% Holy Damage",
+        rarity: "epic",
+        stats: { intelligence: 2, strength: 2 },
+        effects: [{ type: "holy_strike", chance: 0.35, damage: 15 }],
+        cost: 750,
+        levelRequired: 30,
+    },
+};
+
+export function createEnchantment(enchantmentId) {
+    const data = ENCHANTMENT_DEFINITIONS[enchantmentId];
+    if (!data) {
+        console.error("Enchantment not found:", enchantmentId);
+        return null;
+    }
+    return new Enchantment(data);
+}
+
+// Add enchantment system to window for access
+window.EnchantmentSystem = {
+    Enchantment,
+    ENCHANTMENT_DEFINITIONS,
+    createEnchantment,
 };

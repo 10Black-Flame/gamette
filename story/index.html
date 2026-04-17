@@ -444,6 +444,55 @@
             </div>
         </div>
 
+        <!-- Enchanter/Blacksmith Interface Screen -->
+    <div id="enchanter-screen" class="modal-screen hidden" style="z-index: 1000;">
+        <div class="modal-content" style="max-width: 600px;">
+            <button id="close-enchanter-btn" class="close-btn">&times;</button>
+            <h2 id="enchanter-title">Enchanter</h2>
+            <p id="enchanter-desc"></p>
+            <hr>
+            <div id="enchanter-interface-content" style="max-height: 400px; overflow-y: auto;">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .enchantment-item {
+            background: rgba(100, 150, 255, 0.1);
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #6496ff;
+            border-radius: 4px;
+        }
+    
+        .enchantment-option {
+            background: rgba(50, 50, 50, 0.8);
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border: 1px solid #444;
+        }
+    
+        .enchantment-option.disabled {
+            opacity: 0.5;
+        }
+    
+        .repair-menu, .upgrade-menu, .add-enchantment, .remove-enchantment {
+            background: rgba(20, 20, 30, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+    
+        .services-menu button {
+            display: block;
+            width: 100%;
+           margin: 8px 0;
+            padding: 10px;
+        }
+    </style>
+
         <!-- Screen: Guild -->
         <div id="guild-screen" class="screen modal-screen hidden">
             <div class="modal-content">

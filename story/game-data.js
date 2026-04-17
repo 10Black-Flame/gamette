@@ -172,7 +172,7 @@ const GAME_DATA = {
             id: 'village',
             name: 'Aldermere Village',
             description: 'A peaceful village nestled in a green valley. Smoke rises from chimneys and the aroma of freshly baked bread fills the air. The village square has an inn, a blacksmith, an alchemist shop, and a small temple. Children play in the streets while merchants hawk their wares.',
-            npcs: ['innkeeper', 'blacksmith', 'alchemist', 'priest', 'merchant', 'guard', 'farmer', 'bard', 'mayor', 'quest_board'],
+            npcs: ['innkeeper', 'blacksmith', 'enchanter', 'alchemist', 'priest', 'merchant', 'guard', 'farmer', 'bard', 'mayor', 'quest_board'],
             items: ['bread', 'apple'],
             exits: {
                 forest: 'Head north to Dark Forest',
@@ -279,10 +279,20 @@ const GAME_DATA = {
             name: 'Thorin Ironforge',
             description: 'A burly blacksmith with a beard singed from the forge.',
             dialogue: 'Greetings! I craft the finest weapons and armor in all the realm!',
-            type: 'shopkeeper',
+            type: 'blacksmith',
             offers: 'equipment',
             personality: 'gruff',
             intelligence: 'average'
+        },
+        enchanter: {
+            id: 'enchanter',
+            name: 'Lyra Starweaver',
+            description: 'A mysterious mage surrounded by glowing runes and magical auras.',
+            dialogue: 'Welcome seeker. I imbue weapons with the essence of magic itself.',
+            type: 'enchanter',
+            offers: 'enchantments',
+            personality: 'mystical',
+            intelligence: 'genius'
         },
         alchemist: {
             id: 'alchemist',

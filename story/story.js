@@ -1063,7 +1063,7 @@ async function loadDefaultContentPacks() {
     }
 }
 
-// Accessibility: Keyboard Navigation
+// Accessibility: Enhanced Keyboard Navigation
 function setupKeyboardNavigation() {
     document.addEventListener('keydown', (e) => {
         // ESC key to close modals
@@ -1075,11 +1075,71 @@ function setupKeyboardNavigation() {
             }
         }
         
+        // Quick menu keys (Alt + letter for accessibility)
+        if (e.altKey) {
+            const keyMap = {
+                'i': 'inventory-btn',    // Alt+I for Inventory
+                's': 'stats-btn',        // Alt+S for Stats
+                'q': 'quests-btn',       // Alt+Q for Quests
+                'g': 'guild-btn',        // Alt+G for Guild
+                'c': 'crafting-btn',     // Alt+C for Crafting
+                'a': 'achievements-btn', // Alt+A for Achievements
+                'p': 'pet-btn',          // Alt+P for Pet
+                'e': 'enchantments-btn', // Alt+E for Enchantments
+                'l': 'classes-btn',      // Alt+L for Classes
+                'm': 'map-btn',          // Alt+M for Map
+                'o': 'logout-btn',       // Alt+O for Logout
+            };
+            
+            if (keyMap[e.key.toLowerCase()]) {
+                const btn = document.getElementById(keyMap[e.key.toLowerCase()]);
+                if (btn) {
+                    btn.click();
+                    e.preventDefault();
+                }
+            }
+        }
+        
+        // Single letter keys (if not in text input)
+        const target = e.target;
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+            switch(e.key.toLowerCase()) {
+                case 'i':
+                    document.getElementById('inventory-btn')?.click();
+                    e.preventDefault();
+                    break;
+                case 's':
+                    document.getElementById('stats-btn')?.click();
+                    e.preventDefault();
+                    break;
+                case 'q':
+                    document.getElementById('quests-btn')?.click();
+                    e.preventDefault();
+                    break;
+                case 'g':
+                    document.getElementById('guild-btn')?.click();
+                    e.preventDefault();
+                    break;
+                case 'c':
+                    document.getElementById('crafting-btn')?.click();
+                    e.preventDefault();
+                    break;
+                case 'm':
+                    document.getElementById('map-btn')?.click();
+                    e.preventDefault();
+                    break;
+                case 'p':
+                    document.getElementById('pet-btn')?.click();
+                    e.preventDefault();
+                    break;
+            }
+        }
+        
         // Tab navigation for main menu buttons
         if (e.key === 'Tab') {
-            const mainMenuBtns = document.querySelectorAll('#game-menu button');
+            const mainMenuBtns = document.querySelectorAll('.game-menu button');
             const focused = document.activeElement;
-            if (!Array.from(mainMenuBtns).includes(focused)) {
+            if (mainMenuBtns.length > 0 && !Array.from(mainMenuBtns).includes(focused)) {
                 mainMenuBtns[0].focus();
                 e.preventDefault();
             }
@@ -1090,7 +1150,43 @@ function setupKeyboardNavigation() {
             const combatBtns = ['attack-btn', 'spell-btn', 'defend-btn', 'flee-btn'];
             const num = parseInt(e.key);
             if (num >= 1 && num <= 4) {
-                document.getElementById(combatBtns[num - 1]).click();
+                const btn = document.getElementById(combatBtns[num - 1]);
+                if (btn) {
+                    btn.click();
+                    e.preventDefault();
+                }
+            }
+        }
+        
+        // Arrow keys for navigating lists/items
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            const focusedElement = document.activeElement;
+            const parentList = focusedElement.closest('.npc-item') || 
+                             focusedElement.closest('.item-item') ||
+                             focusedElement.closest('.reward-item');
+            
+            if (parentList) {
+                const list = parentList.parentElement;
+                const items = Array.from(list.children);
+                const currentIndex = items.indexOf(parentList);
+                
+                let nextIndex = currentIndex;
+                if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                    nextIndex = (currentIndex + 1) % items.length;
+                } else {
+                    nextIndex = (currentIndex - 1 + items.length) % items.length;
+                }
+                
+                items[nextIndex].focus();
+                e.preventDefault();
+            }
+        }
+        
+        // Enter key to select focused button/item
+        if (e.key === 'Enter') {
+            const target = e.target;
+            if (target.tagName === 'BUTTON' || target.classList.contains('npc-item') || target.classList.contains('item-item')) {
+                target.click();
                 e.preventDefault();
             }
         }

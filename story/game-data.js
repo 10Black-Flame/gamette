@@ -180,11 +180,16 @@ const GAME_DATA = {
                 castle: 'Head west to Ruined Castle',
                 library: 'Visit the Grand Library',
                 workshop: 'Go to Inventor\'s Workshop',
+                aurora_harbor: 'Visit Aurora Harbor',
+                aurella_capital: 'Visit Aurella Capital',
                 marketplace: 'Visit the bustling Marketplace',
                 tavern: 'Enter the local Tavern'
             },
             danger: 1,
-            level: 1
+            level: 1,
+            kingdom: 'aurella',
+            settlementType: 'village',
+            accessible: true
         },
         library: {
             id: 'library',
@@ -192,7 +197,10 @@ const GAME_DATA = {
             description: 'A magnificent library with towering bookshelves filled with ancient tomes. The air smells of old paper and leather. Scholars quietly study at wooden tables.',
             npcs: ['librarian', 'scholar'],
             items: ['ancient_tome', 'spell_scroll'],
-            exits: { village: 'Return to village' }
+            exits: { village: 'Return to village' },
+            kingdom: 'aurella',
+            settlementType: 'town',
+            accessible: true
         },
         workshop: {
             id: 'workshop',
@@ -200,7 +208,10 @@ const GAME_DATA = {
             description: 'A cluttered workshop filled with strange devices, half-finished inventions, and the smell of oil and metal. Gears and springs litter the workbenches.',
             npcs: ['inventor'],
             items: ['gadget', 'mechanical_part'],
-            exits: { village: 'Return to village' }
+            exits: { village: 'Return to village' },
+            kingdom: 'aurella',
+            settlementType: 'town',
+            accessible: true
         },
         forest: {
             id: 'forest',
@@ -210,7 +221,10 @@ const GAME_DATA = {
             enemies: ['goblin', 'goblin', 'wolf'],
             items: ['herb', 'mushroom'],
             wildPets: ['wolf', 'sprite'],
-            exits: { village: 'Return to village', mountains: 'Head east to Rocky Mountains', cave: 'Enter dark cave' }
+            exits: { village: 'Return to village', mountains: 'Head east to Rocky Mountains', cave: 'Enter dark cave' },
+            kingdom: 'aurella',
+            settlementType: 'region',
+            accessible: true
         },
         cave: {
             id: 'cave',
@@ -219,7 +233,10 @@ const GAME_DATA = {
             npcs: [],
             enemies: ['goblin', 'goblin', 'goblinWarrior', 'goblinWarrior'],
             items: ['gold', 'sword', 'shield'],
-            exits: { forest: 'Exit to forest' }
+            exits: { forest: 'Exit to forest' },
+            kingdom: 'aurella',
+            settlementType: 'dungeon',
+            accessible: true
         },
         mountains: {
             id: 'mountains',
@@ -229,7 +246,10 @@ const GAME_DATA = {
             enemies: ['wolf', 'wolf', 'mountain_troll'],
             items: ['ore', 'silver_ore'],
             wildPets: ['golem'],
-            exits: { village: 'Return to village', forest: 'Return to forest', tower: 'Climb to Sky Tower' }
+            exits: { village: 'Return to village', forest: 'Return to forest', tower: 'Climb to Sky Tower' },
+            kingdom: 'aurella',
+            settlementType: 'region',
+            accessible: true
         },
         tower: {
             id: 'tower',
@@ -239,7 +259,10 @@ const GAME_DATA = {
             enemies: ['arcane_golem', 'shadow_mage'],
             items: ['staff', 'mana_crystal'],
             wildPets: ['phoenix'],
-            exits: { mountains: 'Descend to mountains' }
+            exits: { mountains: 'Descend to mountains' },
+            kingdom: 'aurella',
+            settlementType: 'city',
+            accessible: true
         },
         castle: {
             id: 'castle',
@@ -248,7 +271,10 @@ const GAME_DATA = {
             npcs: ['noble'],
             enemies: ['skeleton', 'skeleton', 'dark_knight'],
             items: ['cursed_ring', 'ancient_scroll'],
-            exits: { village: 'Return to village', dungeon: 'Descend to castle dungeon' }
+            exits: { village: 'Return to village', dungeon: 'Descend to castle dungeon' },
+            kingdom: 'aurella',
+            settlementType: 'capital',
+            accessible: true
         },
         dungeon: {
             id: 'dungeon',
@@ -258,7 +284,167 @@ const GAME_DATA = {
             enemies: ['shadow_beast', 'shadow_beast', 'shadow_lord'],
             items: ['treasure_chest', 'ancient_key'],
             wildPets: ['shadow_cat'],
-            exits: { castle: 'Ascend to castle' }
+            exits: { castle: 'Ascend to castle' },
+            kingdom: 'aurella',
+            settlementType: 'dungeon',
+            accessible: true
+        },
+        aurella_capital: {
+            id: 'aurella_capital',
+            name: 'Aurella Capital',
+            description: 'The shining capital of Aurella, where the imperial banner flies and the kingdom first meets the power of the Veltharion Empire.',
+            npcs: ['queen_amaris', 'aurella_general', 'governor_mira'],
+            items: ['royal_seal', 'city_map'],
+            exits: { village: 'Return to Aldermere Village' },
+            kingdom: 'aurella',
+            settlementType: 'capital',
+            accessible: true
+        },
+        aurora_harbor: {
+            id: 'aurora_harbor',
+            name: 'Aurora Harbor',
+            description: 'A busy port city where ships arrive from distant shores and merchants haggle over exotic goods.',
+            npcs: ['portmaster_cedric'],
+            items: ['sea_salt', 'trade_goods'],
+            exits: { village: 'Return to Aldermere Village' },
+            kingdom: 'aurella',
+            settlementType: 'port',
+            accessible: true
+        },
+        faeloria_city: {
+            id: 'faeloria_city',
+            name: 'Faeloria City',
+            description: 'The marble capital of Faeloria glows under moonlight. For now, its streets remain beyond the reach of Aurella\'s travelers.',
+            npcs: ['queen_essa', 'faeloria_general'],
+            items: ['moonstone', 'arcane_scroll'],
+            exits: {},
+            kingdom: 'faeloria',
+            settlementType: 'capital',
+            accessible: false
+        },
+        lunaris_harbor: {
+            id: 'lunaris_harbor',
+            name: 'Lunaris Harbor',
+            description: 'A shimmering port where ships appear and vanish like spirits. It serves as Faeloria\'s gateway to the wider empire.',
+            npcs: ['portmaster_elaine'],
+            items: ['salt', 'silk'],
+            exits: {},
+            kingdom: 'faeloria',
+            settlementType: 'port',
+            accessible: false
+        },
+        thavork_keep: {
+            id: 'thavork_keep',
+            name: 'Thavork Keep',
+            description: 'A massive stone keep that forms the heart of Thavork. Its banners snap in the cold wind, guarding a kingdom of steel and frost.',
+            npcs: ['lord_droth', 'thavork_general'],
+            items: ['steel_ingot', 'frost_berry'],
+            exits: {},
+            kingdom: 'thavork',
+            settlementType: 'capital',
+            accessible: false
+        },
+        frostheim_hall: {
+            id: 'frostheim_hall',
+            name: 'Frostheim Hall',
+            description: 'A hall carved from ice and stone where Frostheim\'s ruler holds court. Its northern isolation keeps it hidden from most travelers.',
+            npcs: ['queen_skaal', 'frostheim_general'],
+            items: ['ice_crystal', 'winter_spice'],
+            exits: {},
+            kingdom: 'frostheim',
+            settlementType: 'capital',
+            accessible: false
+        }
+    },
+
+    // Political Structure
+    empire: {
+        id: 'veltharion_empire',
+        name: 'The Veltharion Empire',
+        description: 'A mighty empire that rules four kingdoms under a single imperial banner. Its power radiates outward from Aurella, the first and most stable kingdom.',
+        ruler: 'emperor_aldric',
+        chancellor: 'chancellor_lyria',
+        general: 'imperial_general',
+        capitalKingdom: 'aurella',
+        army: {
+            id: 'imperial_legion',
+            name: 'Imperial Legion',
+            strength: 100,
+            general: 'imperial_general'
+        }
+    },
+    kingdoms: {
+        aurella: {
+            id: 'aurella',
+            name: 'Aurella',
+            description: 'The first kingdom of the Veltharion Empire, rich with fertile fields, ancient lore, and the only kingdom currently open to travelers.',
+            ruler: 'queen_amaris',
+            capital: 'aurella_capital',
+            port: 'aurora_harbor',
+            towns: ['riverwatch', 'goldenfield'],
+            villages: ['aldermere_village', 'brookvale_village'],
+            general: 'aurella_general',
+            army: {
+                id: 'aurellan_guard',
+                name: 'Aurellan Royal Guard',
+                strength: 70,
+                general: 'aurella_general'
+            },
+            accessible: true
+        },
+        faeloria: {
+            id: 'faeloria',
+            name: 'Faeloria',
+            description: 'A mysterious eastern kingdom known for its moonlit ports and arcane academies, referenced by travelers but locked behind imperial decree.',
+            ruler: 'queen_essa',
+            capital: 'faeloria_city',
+            port: 'lunaris_harbor',
+            towns: ['mistwood', 'silverspire'],
+            villages: ['glimmerglade', 'willowmere'],
+            general: 'faeloria_general',
+            army: {
+                id: 'faelorian_blades',
+                name: 'Faelorian Blades',
+                strength: 60,
+                general: 'faeloria_general'
+            },
+            accessible: false
+        },
+        thavork: {
+            id: 'thavork',
+            name: 'Thavork',
+            description: 'A rugged northern kingdom forged in steel and snow, famous for fortified towns and hardy warriors.',
+            ruler: 'lord_droth',
+            capital: 'thavork_keep',
+            port: 'ironwatch_port',
+            towns: ['stonehold', 'frostgate'],
+            villages: ['grimstead', 'hearthglade'],
+            general: 'thavork_general',
+            army: {
+                id: 'thavork_warband',
+                name: 'Thavork Warband',
+                strength: 55,
+                general: 'thavork_general'
+            },
+            accessible: false
+        },
+        frostheim: {
+            id: 'frostheim',
+            name: 'Frostheim',
+            description: 'A far northern kingdom of glaciers, icebound plains, and stoic leaders, known more in legend than in the present journey.',
+            ruler: 'queen_skaal',
+            capital: 'frostheim_hall',
+            port: 'frostport',
+            towns: ['icefen', 'glacierwatch'],
+            villages: ['snowridge', 'tundrabridge'],
+            general: 'frostheim_general',
+            army: {
+                id: 'frostheim_frostguards',
+                name: 'Frostheim Frostguards',
+                strength: 50,
+                general: 'frostheim_general'
+            },
+            accessible: false
         }
     },
 
@@ -447,6 +633,204 @@ const GAME_DATA = {
             type: 'quest_board',
             personality: 'neutral',
             intelligence: 'none'
+        },
+        emperor_aldric: {
+            id: 'emperor_aldric',
+            name: 'Emperor Aldric Valmor',
+            description: 'The sovereign of the Veltharion Empire, wise and commanding in equal measure.',
+            dialogue: 'Under my rule, the empire remains united. Remember that Aurella is our first jewel, but many others lie beyond the horizon.',
+            type: 'ruler',
+            personality: 'regal',
+            intelligence: 'genius'
+        },
+        chancellor_lyria: {
+            id: 'chancellor_lyria',
+            name: 'Chancellor Lyria Mareth',
+            description: 'The imperial chancellor who manages court affairs and ensures the emperor’s will is carried out across the kingdoms.',
+            dialogue: 'The empire must remain steady. I keep the kingdoms in balance and the armies aligned.',
+            type: 'advisor',
+            personality: 'calm',
+            intelligence: 'genius'
+        },
+        imperial_general: {
+            id: 'imperial_general',
+            name: 'General Kaelen Valdor',
+            description: 'Commander of the Imperial Legion and the strongest military leader in the known realms.',
+            dialogue: 'The Imperial Legion stands ready. When the empire moves, it moves as one.',
+            type: 'general',
+            personality: 'disciplined',
+            intelligence: 'high'
+        },
+        queen_amaris: {
+            id: 'queen_amaris',
+            name: 'Queen Amaris of Aurella',
+            description: 'The ruler of Aurella, beloved for her grace and strength in defending the first kingdom.',
+            dialogue: 'Aurella is the heart of the Veltharion Empire. Guard it well, and our people will prosper.',
+            type: 'ruler',
+            personality: 'noble',
+            intelligence: 'high'
+        },
+        aurella_general: {
+            id: 'aurella_general',
+            name: 'General Roland Crestfall',
+            description: 'The commander of Aurella’s Royal Guard, loyal to Queen Amaris and prepared to defend the kingdom at all costs.',
+            dialogue: 'Our soldiers are ready. The line will hold, and the capital will not fall.',
+            type: 'general',
+            personality: 'resolute',
+            intelligence: 'high'
+        },
+        governor_mira: {
+            id: 'governor_mira',
+            name: 'Governor Mira Dawnshield',
+            description: 'The steward of Aurella Capital, overseeing trade and law where the imperial presence is strongest.',
+            dialogue: 'A city thrives on order and opportunity. Keep your dealings honest, and you will find favor.',
+            type: 'governor',
+            personality: 'pragmatic',
+            intelligence: 'high'
+        },
+        portmaster_cedric: {
+            id: 'portmaster_cedric',
+            name: 'Portmaster Cedric Hale',
+            description: 'The keeper of Aurora Harbor, controlling the flow of goods and vessels along Aurella’s coast.',
+            dialogue: 'The tide brings wealth and news. Secure the harbor, and the kingdom remains supplied.',
+            type: 'portmaster',
+            personality: 'practical',
+            intelligence: 'average'
+        },
+        lord_hawke: {
+            id: 'lord_hawke',
+            name: 'Lord Declan Hawke',
+            description: 'The lord of Riverwatch, a strategic town guarding one of Aurella’s busy trade routes.',
+            dialogue: 'My people look to me for safety. I will not let the road fall into chaos.',
+            type: 'lord',
+            personality: 'protective',
+            intelligence: 'high'
+        },
+        chief_lyla: {
+            id: 'chief_lyla',
+            name: 'Chief Lyla Greenfield',
+            description: 'The village chief of Aldermere Village, trusted by her people and skilled in solving local disputes.',
+            dialogue: 'This village is my home. We are small, but we stand together and take care of one another.',
+            type: 'chief',
+            personality: 'warm',
+            intelligence: 'wise'
+        },
+        queen_essa: {
+            id: 'queen_essa',
+            name: 'Queen Essa of Faeloria',
+            description: 'The ruler of Faeloria, an enigmatic sovereign whose realm is cloaked in arcane mystery.',
+            dialogue: 'Faeloria watches from the east. One day its gates will open, but for now its secrets remain.',
+            type: 'ruler',
+            personality: 'mysterious',
+            intelligence: 'genius'
+        },
+        faeloria_general: {
+            id: 'faeloria_general',
+            name: 'General Seraphine Illyra',
+            description: 'Commander of Faeloria’s army, skilled in both blade and sorcery.',
+            dialogue: 'Our forces are disciplined, and our enemies will learn the price of entering Faeloria.',
+            type: 'general',
+            personality: 'calculated',
+            intelligence: 'high'
+        },
+        portmaster_elaine: {
+            id: 'portmaster_elaine',
+            name: 'Portmaster Elaine Silverdew',
+            description: 'The master of Lunaris Harbor, steward of Faeloria’s trade and travel across the sea.',
+            dialogue: 'Goods flow from Faeloria to the world. Guard the harbor, and nothing slips through our watch.',
+            type: 'portmaster',
+            personality: 'reserved',
+            intelligence: 'high'
+        },
+        lord_droth: {
+            id: 'lord_droth',
+            name: 'Lord Droth Ironhelm',
+            description: 'The ruler of Thavork, fierce and unyielding as the mountains that guard his realm.',
+            dialogue: 'Thavork exists by strength. Our people are forged in hardship and will not bend.',
+            type: 'ruler',
+            personality: 'stern',
+            intelligence: 'high'
+        },
+        thavork_general: {
+            id: 'thavork_general',
+            name: 'General Brune Stonehand',
+            description: 'Leader of Thavork’s warband, a veteran of countless battles in the cold north.',
+            dialogue: 'My soldiers know no fear. The north holds firm under our watch.',
+            type: 'general',
+            personality: 'gruff',
+            intelligence: 'high'
+        },
+        queen_skaal: {
+            id: 'queen_skaal',
+            name: 'Queen Skaal of Frostheim',
+            description: 'The icy monarch of Frostheim, her rule as cold and precise as the glaciers of her land.',
+            dialogue: 'Frostheim endures when others falter. We await the day we are called to the empire’s side.',
+            type: 'ruler',
+            personality: 'stoic',
+            intelligence: 'high'
+        },
+        frostheim_general: {
+            id: 'frostheim_general',
+            name: 'General Freya Icevein',
+            description: 'Commander of Frostheim’s Frostguards, trained to fight in blizzard and ice.',
+            dialogue: 'The frost does not forgive weakness. Our troops strike true in the cold.',
+            type: 'general',
+            personality: 'disciplined',
+            intelligence: 'high'
+        },
+        faeloria_lord: {
+            id: 'faeloria_lord',
+            name: 'Lord Caelen Moonfall',
+            description: 'A senior noble of Faeloria who manages one of the kingdom’s moonlit towns and enforces its laws.',
+            dialogue: 'The people of Faeloria look to us for guidance. We keep the peace, even in the shadows.',
+            type: 'lord',
+            personality: 'calm',
+            intelligence: 'high'
+        },
+        faeloria_chief: {
+            id: 'faeloria_chief',
+            name: 'Chief Aria Willowshade',
+            description: 'The village chief of a hidden Faelorian settlement, respected for her wisdom and grace.',
+            dialogue: 'Our village endures through quiet strength. The moon guides us, and we answer.',
+            type: 'chief',
+            personality: 'wise',
+            intelligence: 'high'
+        },
+        thavork_lord: {
+            id: 'thavork_lord',
+            name: 'Lord Varrik Stonewall',
+            description: 'A powerful lord of Thavork, charged with holding the mountain passes and guarding local villages.',
+            dialogue: 'The mountain roads belong to us. Any who would pass must answer to my men.',
+            type: 'lord',
+            personality: 'stern',
+            intelligence: 'high'
+        },
+        thavork_chief: {
+            id: 'thavork_chief',
+            name: 'Chief Ulf Hearthguard',
+            description: 'The village chief of a Thavork hamlet, hardened by cold and loyal to his people.',
+            dialogue: 'These lands are harsh, but we have survived by standing together.',
+            type: 'chief',
+            personality: 'resolute',
+            intelligence: 'average'
+        },
+        frostheim_lord: {
+            id: 'frostheim_lord',
+            name: 'Lord Bjorn Frostvein',
+            description: 'A lord in Frostheim who oversees one of the kingdom’s icebound towns and its defense.',
+            dialogue: 'Do not mistake our cold manners for weakness. We are unbroken, and we will protect our home.',
+            type: 'lord',
+            personality: 'pragmatic',
+            intelligence: 'high'
+        },
+        frostheim_chief: {
+            id: 'frostheim_chief',
+            name: 'Chief Freya Snowmantle',
+            description: 'A respected village chief in Frostheim, known for keeping her people fed and safe through winter storms.',
+            dialogue: 'The snow can be merciless, but our people are stronger. We endure together.',
+            type: 'chief',
+            personality: 'steady',
+            intelligence: 'wise'
         }
     },
 
